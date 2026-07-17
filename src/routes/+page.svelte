@@ -3,14 +3,19 @@
 	import { kanjiData, GRADES } from '$lib/kanji-data.js';
 	import { db, getOrCreateProgress, saveProgress, getStats } from '$lib/db.js';
 	import { schedule, newCardState, GRADE } from '$lib/srs.js';
+	import { buildQuestion } from '$lib/quiz.js';
 
 	let level = $state(GRADES[0]);
 	let queue = $state([]); // [{kanji, meta, progress}]
 	let current = $state(null);
-	let revealed = $state(false);
+	let answered = $state(false);
+	let selectedIndex = $state(null);
 	let stats = $state({ total: 0, due: 0, learned: 0 });
 	let ready = $state(false);
 	let offlineReady = $state(false);
+
+	let currentGradePool = $derived(kanjiData.filter((k) => k.grade === level));
+	let question = $derived(current ? buildQuestion(currentGradePool, current.meta) : null);
 
 	async function loadLevel(lvl) {
 		ready = false;
@@ -31,7 +36,8 @@
 		});
 		queue = withProgress;
 		current = queue[0] ?? null;
-		revealed = false;
+		answered = false;
+		selectedIndex = null;
 		stats = await getStats(lvl);
 		ready = true;
 	}
@@ -50,8 +56,19 @@
 		}
 		queue = rest;
 		current = queue[0] ?? null;
-		revealed = false;
 		stats = await getStats(level);
+	}
+
+	function answer(idx) {
+		if (answered || !question) return;
+		answered = true;
+		selectedIndex = idx;
+		const isCorrect = question.options[idx].correct;
+		setTimeout(() => {
+			grade(isCorrect ? GRADE.GOOD : GRADE.AGAIN);
+			answered = false;
+			selectedIndex = null;
+		}, 800);
 	}
 
 	function selectLevel(lvl) {
@@ -94,37 +111,30 @@
 
 	{#if !ready}
 		<p class="loading">Loading…</p>
-	{:else if !current}
+	{:else if !current || !question}
 		<div class="empty">
 			<p>All caught up on grade {level} for now 🎉</p>
 			<p class="hint">Come back later, or switch levels above.</p>
 		</div>
 	{:else}
-		<div class="card" onclick={() => (revealed = !revealed)}>
-			<div class="kanji">{current.meta.kanji}</div>
-			{#if revealed}
-				<div class="details">
-					{#if current.meta.onyomi.length}
-						<p><span class="label">On:</span> {current.meta.onyomi.join('、')}</p>
-					{/if}
-					{#if current.meta.kunyomi.length}
-						<p><span class="label">Kun:</span> {current.meta.kunyomi.join('、')}</p>
-					{/if}
-					<p class="meaning">{current.meta.meaning}</p>
-				</div>
-			{:else}
-				<p class="tap-hint">tap to reveal</p>
-			{/if}
+		<div class="prompt" class:kanji-prompt={question.mode === 'meaning'}>
+			{question.prompt}
 		</div>
 
-		{#if revealed}
-			<div class="grades">
-				<button class="again" onclick={() => grade(GRADE.AGAIN)}>Again</button>
-				<button class="hard" onclick={() => grade(GRADE.HARD)}>Hard</button>
-				<button class="good" onclick={() => grade(GRADE.GOOD)}>Good</button>
-				<button class="easy" onclick={() => grade(GRADE.EASY)}>Easy</button>
-			</div>
-		{/if}
+		<div class="options" class:grid={question.mode === 'kanji'}>
+			{#each question.options as option, i}
+				<button
+					class="option"
+					class:kanji-option={question.mode === 'kanji'}
+					class:correct={answered && option.correct}
+					class:incorrect={answered && i === selectedIndex && !option.correct}
+					disabled={answered}
+					onclick={() => answer(i)}
+				>
+					{option.text}
+				</button>
+			{/each}
+		</div>
 	{/if}
 </main>
 
@@ -186,71 +196,62 @@
 		color: var(--text-dim);
 	}
 
-	.card {
+	.prompt {
 		flex: 1;
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		background: var(--surface);
 		border-radius: 1rem;
-		min-height: 320px;
-		padding: 2rem 1rem;
-		gap: 1rem;
-		cursor: pointer;
+		min-height: 200px;
+		padding: 2rem 1.25rem;
+		text-align: center;
+		font-size: 1.5rem;
+		font-weight: 600;
 		user-select: none;
 	}
 
-	.kanji {
+	.prompt.kanji-prompt {
 		font-size: 6rem;
 		line-height: 1;
 	}
 
-	.tap-hint {
-		color: var(--text-dim);
-		font-size: 0.85rem;
+	.options {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
 	}
 
-	.details {
+	.options.grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.option {
+		padding: 0.9rem 1rem;
+		border: 1px solid var(--surface-2);
+		border-radius: 0.6rem;
+		background: var(--surface);
+		color: var(--text);
+		font-weight: 600;
 		text-align: center;
 	}
 
-	.details .label {
-		color: var(--text-dim);
-		font-size: 0.8rem;
+	.option.kanji-option {
+		font-size: 2.5rem;
+		padding: 1.25rem 0;
 	}
 
-	.details .meaning {
-		font-size: 1.25rem;
-		font-weight: 600;
-		margin-top: 0.5rem;
-	}
-
-	.grades {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 0.5rem;
-	}
-
-	.grades button {
-		padding: 0.9rem 0;
-		border: none;
-		border-radius: 0.6rem;
-		color: white;
-		font-weight: 600;
-	}
-
-	.again {
-		background: var(--again);
-	}
-	.hard {
-		background: var(--hard);
-	}
-	.good {
+	.option.correct {
 		background: var(--good);
+		border-color: var(--good);
+		color: white;
 	}
-	.easy {
-		background: var(--easy);
+
+	.option.incorrect {
+		background: var(--again);
+		border-color: var(--again);
+		color: white;
 	}
 
 	.empty,
