@@ -1,6 +1,6 @@
 # Kanji Flash
 
-Offline-first kanji flashcards, grouped by Japanese school grade. Built as a PWA so it works
+Offline-first kanji quiz, grouped by Japanese school grade. Built as a PWA so it works
 with zero internet access once loaded — no app store, no account, no sync
 server.
 
@@ -13,6 +13,9 @@ server.
   offline use indefinitely, no network dependency at all
 - **SM-2 spaced repetition** (`src/lib/srs.js`) — same family of algorithm
   used by Anki
+- **Multiple-choice quiz** (`src/lib/quiz.js`) — each card randomly asks
+  either kanji→meaning or meaning→kanji, with 3 wrong options borrowed from
+  other kanji in the same grade
 
 ## Running it
 
@@ -60,5 +63,6 @@ replaced by `-`, `<meaning>` without `m_lang` → meaning).
 - All progress is stored **only on your device** (IndexedDB). There's no
   backend, so nothing to lose access to, but also nothing to sync across
   devices unless you add that yourself later.
-- The "Again/Hard/Good/Easy" buttons map to SM-2 grades; missed cards get
-  re-queued a few cards later in the same session rather than vanishing.
+- A correct answer maps to SM-2's "Good" grade, a wrong one to "Again";
+  missed cards get re-queued a few cards later in the same session rather
+  than vanishing.
