@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 	import { kanjiData, GRADES } from '$lib/kanji-data.js';
 	import { db, getOrCreateProgress, saveProgress, getStats } from '$lib/db.js';
 	import { schedule, newCardState, GRADE } from '$lib/srs.js';
@@ -80,9 +81,8 @@
 		loadLevel(level);
 		// Just a soft signal to the user that the SW has taken over —
 		// not required for functionality, IndexedDB works regardless.
-		if ('serviceWorker' in navigator) {
-			navigator.serviceWorker.ready.then(() => (offlineReady = true));
-		}
+		const { offlineReady: offlineReadyStore } = useRegisterSW();
+		return offlineReadyStore.subscribe((v) => (offlineReady = v));
 	});
 </script>
 
