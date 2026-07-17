@@ -1,10 +1,10 @@
 <script>
 	import { onMount } from 'svelte';
-	import { kanjiData, LEVELS } from '$lib/kanji-data.js';
+	import { kanjiData, GRADES } from '$lib/kanji-data.js';
 	import { db, getOrCreateProgress, saveProgress, getStats } from '$lib/db.js';
 	import { schedule, newCardState, GRADE } from '$lib/srs.js';
 
-	let level = $state('N5');
+	let level = $state(GRADES[0]);
 	let queue = $state([]); // [{kanji, meta, progress}]
 	let current = $state(null);
 	let revealed = $state(false);
@@ -14,7 +14,7 @@
 
 	async function loadLevel(lvl) {
 		ready = false;
-		const pool = kanjiData.filter((k) => k.level === lvl);
+		const pool = kanjiData.filter((k) => k.grade === lvl);
 		const withProgress = await Promise.all(
 			pool.map(async (meta) => {
 				const progress = await getOrCreateProgress(meta.kanji, lvl, newCardState);
@@ -70,7 +70,7 @@
 </script>
 
 <svelte:head>
-	<title>Kanji Flash — {level}</title>
+	<title>Kanji Flash — Grade {level}</title>
 </svelte:head>
 
 <main>
@@ -82,7 +82,7 @@
 	</header>
 
 	<nav class="levels">
-		{#each LEVELS as lvl}
+		{#each GRADES as lvl}
 			<button class:active={lvl === level} onclick={() => selectLevel(lvl)}>{lvl}</button>
 		{/each}
 	</nav>
@@ -96,7 +96,7 @@
 		<p class="loading">Loading…</p>
 	{:else if !current}
 		<div class="empty">
-			<p>All caught up on {level} for now 🎉</p>
+			<p>All caught up on grade {level} for now 🎉</p>
 			<p class="hint">Come back later, or switch levels above.</p>
 		</div>
 	{:else}

@@ -19,9 +19,9 @@ export default defineConfig({
 			},
 			includeAssets: ['favicon.svg', 'icons/*.png'],
 			manifest: {
-				name: 'Kanji Flash — N5-N2 Offline Flashcards',
+				name: 'Kanji Flash — Offline Flashcards',
 				short_name: 'KanjiFlash',
-				description: 'Offline-first kanji flashcards for JLPT N5–N2',
+				description: 'Offline-first kanji flashcards by school grade',
 				theme_color: '#1a1a2e',
 				background_color: '#1a1a2e',
 				display: 'standalone',

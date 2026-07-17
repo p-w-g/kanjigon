@@ -1,6 +1,6 @@
 # Kanji Flash
 
-Offline-first kanji flashcards for JLPT N5–N2. Built as a PWA so it works
+Offline-first kanji flashcards, grouped by Japanese school grade. Built as a PWA so it works
 with zero internet access once loaded — no app store, no account, no sync
 server.
 
@@ -34,27 +34,26 @@ it should keep working. On mobile Chrome/Safari you can "Add to Home
 Screen" from the share/menu — that's the whole install story, no store
 needed.
 
-## Expanding the kanji dataset
+## Kanji dataset
 
-`src/lib/kanji-data.js` currently ships a 40-kanji starter set (10 per
-level) just so the app runs immediately. For real N5–N2 coverage
-(roughly 100 / 150 / 370 / 650 kanji respectively), pull from:
+`src/lib/kanji-data.js` is generated from **KANJIDIC2** (Electronic
+Dictionary Research and Development Group, Creative Commons licensed):
+https://www.edrdg.org/wiki/index.php/KANJIDIC_Project
 
-- **KANJIDIC2** (Electronic Dictionary Research and Development Group,
-  Creative Commons licensed) — readings, meanings, stroke counts:
-  https://www.edrdg.org/wiki/index.php/KANJIDIC_Project
-- Community JLPT-level-tagged kanji lists on GitHub (search
-  "jlpt kanji list json") — already bucketed by level, saves you the
-  mapping work.
-
-Each entry just needs to match this shape:
+It includes every kanji with a `<grade>` value (2999 total) — grades 1–6
+are the Japanese elementary school curriculum, grade 8 is the remaining
+jouyou (general-use) kanji, and grades 9–10 are jinmeiyou (name) kanji.
+Each entry matches this shape:
 
 ```js
-{ kanji: '一', level: 'N5', onyomi: ['イチ'], kunyomi: ['ひと-つ'], meaning: 'one' }
+{ kanji: '一', grade: 1, onyomi: ['イチ', 'イツ'], kunyomi: ['ひと-', 'ひと-つ'], meaning: 'one, one radical (no.1)' }
 ```
 
-Once you swap in the full list, rebuild — Workbox will re-precache
-everything automatically on next launch.
+To regenerate it from an updated `kanjidic2.xml`, see the conversion
+approach in git history — it's a straightforward regex extraction over
+each `<character>` block's `literal`, `misc/grade`, and
+`reading_meaning/rmgroup` (`ja_on` → onyomi, `ja_kun` → kunyomi with `.`
+replaced by `-`, `<meaning>` without `m_lang` → meaning).
 
 ## Notes
 
