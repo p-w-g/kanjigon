@@ -1,0 +1,45 @@
+import { sveltekit } from '@sveltejs/kit/vite';
+import { VitePWA } from 'vite-plugin-pwa';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+	plugins: [
+		sveltekit(),
+		VitePWA({
+			registerType: 'autoUpdate',
+			// injectManifest lets Workbox precache EVERYTHING built by Vite,
+			// including your kanji JSON data, so the whole app works with zero
+			// network access after the very first load.
+			strategies: 'generateSW',
+			workbox: {
+				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json}'],
+				// cache-first for our own data/assets since kanji data never changes
+				// between deploys — no need to hit the network at all offline.
+				runtimeCaching: []
+			},
+			includeAssets: ['favicon.svg', 'icons/*.png'],
+			manifest: {
+				name: 'Kanji Flash — N5-N2 Offline Flashcards',
+				short_name: 'KanjiFlash',
+				description: 'Offline-first kanji flashcards for JLPT N5–N2',
+				theme_color: '#1a1a2e',
+				background_color: '#1a1a2e',
+				display: 'standalone',
+				start_url: '/',
+				icons: [
+					{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+					{ src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+					{
+						src: 'icons/icon-512-maskable.png',
+						sizes: '512x512',
+						type: 'image/png',
+						purpose: 'maskable'
+					}
+				]
+			},
+			devOptions: {
+				enabled: true // so you can test offline behavior in `npm run dev` too
+			}
+		})
+	]
+});

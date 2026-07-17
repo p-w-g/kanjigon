@@ -1,0 +1,33 @@
+:root {
+	--bg: #1a1a2e;
+	--surface: #232342;
+	--surface-2: #2c2c54;
+	--text: #f1f1f6;
+	--text-dim: #a0a0c0;
+	--accent: #7c5cff;
+	--good: #4caf50;
+	--hard: #ff9800;
+	--again: #f44336;
+	--easy: #2196f3;
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	background: var(--bg);
+	color: var(--text);
+	font-family: 'Hiragino Sans', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+	-webkit-tap-highlight-color: transparent;
+	overscroll-behavior: none;
+}
+
+button {
+	font-family: inherit;
+}
