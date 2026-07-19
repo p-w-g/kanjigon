@@ -6,7 +6,7 @@
 	import { getOrCreateProgress, saveProgress } from '$lib/db.js';
 	import { schedule, newCardState, GRADE } from '$lib/srs.js';
 	import { buildQuestion } from '$lib/quiz.js';
-	import { sortByDueThenRepetitions, decodeSessionConfig } from '$lib/session.js';
+	import { sortByDueThenRepetitions, decodeSessionConfig, summarizeSession } from '$lib/session.js';
 
 	const config = decodeSessionConfig(page.params.code);
 	const validConfig = config !== null;
@@ -16,10 +16,12 @@
 
 	const combinedPool = validConfig ? kanjiData.filter((k) => grades.includes(k.grade)) : [];
 
-	let phase = $state('main'); // 'main' | 'review'
+	let phase = $state('main'); // 'main' | 'review' | 'summary'
 	let queue = $state([]); // [{meta, progress}]
 	let current = $state(null);
 	let failedSet = $state(new Set()); // kanji failed at least once during the main phase
+	let everMissed = $state(new Set()); // kanji ever wrong, never cleared — for the summary screen
+	let sessionTotal = $state(0); // kanji count at the start of the main phase
 	let progressByKanji = new Map(); // kanji -> latest saved progress record (plain, not reactive)
 	let answered = $state(false);
 	let selectedIndex = $state(null);
@@ -27,6 +29,11 @@
 	let quitDialogEl;
 
 	let question = $derived(current ? buildQuestion(combinedPool, current.meta) : null);
+	let summary = $derived(
+		phase === 'summary'
+			? summarizeSession({ total: sessionTotal, missed: everMissed.size, stillIncorrect: failedSet.size })
+			: null
+	);
 
 	async function initSession() {
 		const withProgress = await Promise.all(
@@ -37,6 +44,7 @@
 			})
 		);
 		queue = sortByDueThenRepetitions(withProgress).slice(0, count);
+		sessionTotal = queue.length;
 		current = queue[0] ?? null;
 		ready = true;
 	}
@@ -51,7 +59,7 @@
 			queue = sortByDueThenRepetitions(items);
 			current = queue[0] ?? null;
 		} else {
-			goto('/');
+			phase = 'summary';
 		}
 	}
 
@@ -68,12 +76,16 @@
 
 		const rest = queue.slice(1);
 		if (g < GRADE.HARD) {
-			if (phase === 'main') failedSet.add(current.meta.kanji);
+			if (phase === 'main') {
+				failedSet.add(current.meta.kanji);
+				everMissed.add(current.meta.kanji);
+			}
 			rest.splice(Math.min(3, rest.length), 0, { meta: current.meta, progress: record });
 		} else if (phase === 'review') {
 			failedSet.delete(current.meta.kanji);
 		}
 		failedSet = new Set(failedSet);
+		everMissed = new Set(everMissed);
 
 		queue = rest;
 		current = queue[0] ?? null;
@@ -124,16 +136,27 @@
 {#if validConfig}
 	<main>
 		<header>
-			<h1>{phase === 'review' ? 'Review round' : 'Session'}</h1>
-			<div class="header-right">
-				<div class="remaining">{queue.length} left</div>
-				{#if phase !== 'summary'}
+			<h1>{phase === 'review' ? 'Review round' : phase === 'summary' ? 'Summary' : 'Session'}</h1>
+			{#if phase !== 'summary'}
+				<div class="header-right">
+					<div class="remaining">{queue.length} left</div>
 					<button class="quit" onclick={openQuitDialog}>Quit</button>
-				{/if}
-			</div>
+				</div>
+			{/if}
 		</header>
 
-		{#if !ready}
+		{#if phase === 'summary'}
+			<div class="summary">
+				<p class="summary-headline">{summary.correctFirstTry} / {summary.total} correct first try</p>
+				{#if summary.missed > 0}
+					<p class="summary-line">{summary.missed} needed a second look</p>
+				{/if}
+				{#if summary.stillIncorrect > 0}
+					<p class="summary-line still-incorrect">{summary.stillIncorrect} still incorrect</p>
+				{/if}
+				<button class="home" onclick={() => goto('/')}>Back to home</button>
+			</div>
+		{:else if !ready}
 			<p class="loading">Loading…</p>
 		{:else if !current || !question}
 			<div class="empty">
@@ -357,5 +380,41 @@
 		justify-content: center;
 		text-align: center;
 		color: var(--text-dim);
+	}
+
+	.summary {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		text-align: center;
+	}
+
+	.summary-headline {
+		font-size: 1.5rem;
+		font-weight: 600;
+		margin: 0;
+	}
+
+	.summary-line {
+		margin: 0;
+		color: var(--text-dim);
+	}
+
+	.summary-line.still-incorrect {
+		color: var(--again);
+	}
+
+	.home {
+		margin-top: 1rem;
+		padding: 0.9rem 1.5rem;
+		border: none;
+		border-radius: 0.6rem;
+		background: var(--accent);
+		color: white;
+		font-weight: 600;
+		font-size: 1rem;
 	}
 </style>

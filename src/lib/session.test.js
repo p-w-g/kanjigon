@@ -3,6 +3,7 @@ import {
 	sortByDueThenRepetitions,
 	encodeSessionConfig,
 	decodeSessionConfig,
+	summarizeSession,
 	SESSION_SIZES
 } from './session.js';
 import { GRADES } from './kanji-data.js';
@@ -74,5 +75,34 @@ describe('encodeSessionConfig / decodeSessionConfig', () => {
 	it('returns null when the grade bits are all zero (no grades selected)', () => {
 		// count-index=0, review=0, grade-bits=0 -> code "0"
 		expect(decodeSessionConfig('0')).toBeNull();
+	});
+});
+
+describe('summarizeSession', () => {
+	it('reports everything correct first try when nothing was ever missed', () => {
+		expect(summarizeSession({ total: 20, missed: 0, stillIncorrect: 0 })).toEqual({
+			total: 20,
+			correctFirstTry: 20,
+			missed: 0,
+			stillIncorrect: 0
+		});
+	});
+
+	it('subtracts misses from correctFirstTry regardless of whether review fixed them', () => {
+		expect(summarizeSession({ total: 20, missed: 5, stillIncorrect: 0 })).toEqual({
+			total: 20,
+			correctFirstTry: 15,
+			missed: 5,
+			stillIncorrect: 0
+		});
+	});
+
+	it('carries stillIncorrect through unchanged (no review round, or it did not clear everything)', () => {
+		expect(summarizeSession({ total: 20, missed: 5, stillIncorrect: 2 })).toEqual({
+			total: 20,
+			correctFirstTry: 15,
+			missed: 5,
+			stillIncorrect: 2
+		});
 	});
 });

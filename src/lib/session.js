@@ -63,3 +63,15 @@ export function sortByDueThenRepetitions(items) {
 		return a.progress.repetitions - b.progress.repetitions;
 	});
 }
+
+/**
+ * Turns raw end-of-session counts into the numbers shown on the summary
+ * screen. `missed` counts kanji wrong at least once, whether or not a later
+ * review round fixed it; `stillIncorrect` is only non-zero when there was no
+ * review round (or it didn't cover everything) to clear a miss.
+ * @param {{ total: number, missed: number, stillIncorrect: number }} counts
+ * @returns {{ total: number, correctFirstTry: number, missed: number, stillIncorrect: number }}
+ */
+export function summarizeSession({ total, missed, stillIncorrect }) {
+	return { total, correctFirstTry: total - missed, missed, stillIncorrect };
+}
