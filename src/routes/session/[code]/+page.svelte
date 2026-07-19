@@ -363,6 +363,14 @@
 		font-weight: 400;
 		color: inherit;
 		opacity: 0.7;
+		/* A kanji can have far more readings than a grid tile has room for
+		   (some 15+) - clamp to 2 lines and ellipsize rather than growing the
+		   tile past its neighbors, no matter how many readings there are. */
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.option.correct {

@@ -36,18 +36,17 @@ function shuffle(arr) {
 
 // KANJIDIC2 has no way to tell which reading goes with which meaning (that's
 // per-word data, not per-character), so rather than falsely pairing one
-// reading with whichever meaning is being quizzed, just show a handful of
-// the kanji's actual readings — on and kun mixed — and let learners build
-// the reading<->meaning association themselves over repeated exposure.
-const MAX_READINGS_SHOWN = 3;
-
+// reading with whichever meaning is being quizzed, just show every reading
+// the kanji has — on and kun mixed — and let learners build the
+// reading<->meaning association themselves over repeated exposure. How many
+// is too many to *display* is a layout concern (see .option-reading's
+// line-clamp in the session page), not something this function decides.
 /**
  * @param {{onyomi: string[], kunyomi: string[]}} entry
- * @param {number} [max]
  * @returns {string[]}
  */
-export function pickReadings(entry, max = MAX_READINGS_SHOWN) {
-	return [...entry.onyomi, ...entry.kunyomi].slice(0, max);
+export function pickReadings(entry) {
+	return [...entry.onyomi, ...entry.kunyomi];
 }
 
 function uniqueBy(arr, key) {

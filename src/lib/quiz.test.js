@@ -32,17 +32,13 @@ describe('pickReadings', () => {
 	it('falls back to kunyomi-only when there is no onyomi', () => {
 		const hatake = kanjiData.find((k) => k.kanji === '畑');
 		expect(hatake.onyomi).toEqual([]);
-		expect(pickReadings(hatake)).toEqual(hatake.kunyomi.slice(0, 3));
+		expect(pickReadings(hatake)).toEqual(hatake.kunyomi);
 	});
 
-	it('caps at max (default 3), even when a kanji has many more readings', () => {
-		const manyReadings = { onyomi: ['a', 'b'], kunyomi: ['c', 'd', 'e'] };
-		expect(pickReadings(manyReadings)).toEqual(['a', 'b', 'c']);
-	});
-
-	it('supports a custom max', () => {
-		const manyReadings = { onyomi: ['a', 'b'], kunyomi: ['c', 'd', 'e'] };
-		expect(pickReadings(manyReadings, 2)).toEqual(['a', 'b']);
+	it('returns every reading, uncapped, even for a kanji with many (e.g. 上, 18 total)', () => {
+		const kami = kanjiData.find((k) => k.kanji === '上');
+		expect(pickReadings(kami)).toEqual([...kami.onyomi, ...kami.kunyomi]);
+		expect(pickReadings(kami).length).toBeGreaterThan(10);
 	});
 
 	it('returns an empty array when there is no reading at all', () => {
