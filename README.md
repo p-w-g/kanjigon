@@ -17,6 +17,22 @@ server.
   either kanji→meaning or meaning→kanji, with 3 wrong options borrowed from
   other kanji in the same grade
 
+## Using it
+
+The home screen (`/`) shows, per grade, **% reviewed** (ever quizzed) and
+**% learned** (answered correctly enough times to clear the SRS threshold).
+"Run new session" opens a dialog to pick which grade(s) to mix, how many
+kanji to quiz (20-50), and whether to run a review round afterward.
+
+A session (`/session?grades=...&count=...&review=...`) quizzes exactly that
+many kanji. Missed cards get re-queued a few cards later in the same pass
+rather than vanishing (they don't count as "learned" until answered right
+in a later pass — the SRS repetition count resets to 0 on any miss). If
+"review after" was checked and anything was missed, a review round follows
+that re-drills *only* the missed kanji — no new kanji, no other grades —
+cycling until every one of them has been answered correctly once. Either
+way, the session ends back on the home screen with stats refreshed.
+
 ## Running it
 
 ```bash
