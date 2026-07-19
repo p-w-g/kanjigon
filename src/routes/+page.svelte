@@ -1,7 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 	import { kanjiData, GRADES } from '$lib/kanji-data.js';
 	import { getAllGradeStats } from '$lib/db.js';
 	import { encodeSessionConfig, SESSION_SIZES } from '$lib/session.js';
@@ -11,7 +10,6 @@
 	let sessionSize = $state(20);
 	let reviewAfter = $state(true);
 	let ready = $state(false);
-	let offlineReady = $state(false);
 	let dialogEl;
 
 	async function loadStats() {
@@ -57,10 +55,6 @@
 
 	onMount(() => {
 		loadStats();
-		// Just a soft signal to the user that the SW has taken over —
-		// not required for functionality, IndexedDB works regardless.
-		const { offlineReady: offlineReadyStore } = useRegisterSW();
-		return offlineReadyStore.subscribe((v) => (offlineReady = v));
 	});
 </script>
 
@@ -71,9 +65,6 @@
 <main>
 	<header>
 		<h1>漢字ゴン</h1>
-		<div class="badge" class:on={offlineReady} title="Offline caching status">
-			{offlineReady ? '● offline-ready' : '○ loading…'}
-		</div>
 	</header>
 
 	{#if !ready}
@@ -166,14 +157,6 @@
 	h1 {
 		font-size: 1.25rem;
 		margin: 0;
-	}
-
-	.badge {
-		font-size: 0.7rem;
-		color: var(--text-dim);
-	}
-	.badge.on {
-		color: var(--good);
 	}
 
 	.loading {
