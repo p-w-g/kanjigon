@@ -34,14 +34,20 @@ function shuffle(arr) {
 	return copy;
 }
 
+// KANJIDIC2 has no way to tell which reading goes with which meaning (that's
+// per-word data, not per-character), so rather than falsely pairing one
+// reading with whichever meaning is being quizzed, just show a handful of
+// the kanji's actual readings — on and kun mixed — and let learners build
+// the reading<->meaning association themselves over repeated exposure.
+const MAX_READINGS_SHOWN = 3;
+
 /**
- * Picks one reading to display alongside a kanji during quiz — onyomi
- * preferred, falling back to kunyomi (some kanji, e.g. 王, have no onyomi).
  * @param {{onyomi: string[], kunyomi: string[]}} entry
- * @returns {string}
+ * @param {number} [max]
+ * @returns {string[]}
  */
-export function pickReading(entry) {
-	return entry.onyomi[0] ?? entry.kunyomi[0] ?? '';
+export function pickReadings(entry, max = MAX_READINGS_SHOWN) {
+	return [...entry.onyomi, ...entry.kunyomi].slice(0, max);
 }
 
 function uniqueBy(arr, key) {
@@ -59,10 +65,10 @@ function uniqueBy(arr, key) {
 /**
  * @param {{kanji: string, meaning: string, onyomi: string[], kunyomi: string[]}[]} pool same-grade kanji metas
  * @param {{kanji: string, meaning: string, onyomi: string[], kunyomi: string[]}} entry the kanji being quizzed
- * @returns {{ mode: 'meaning'|'kanji', prompt: string, reading?: string, options: {text: string, correct: boolean, reading?: string}[] }}
- * `reading` is on the question itself in 'meaning' mode (kanji shown, reading practice
+ * @returns {{ mode: 'meaning'|'kanji', prompt: string, readings?: string[], options: {text: string, correct: boolean, readings?: string[]}[] }}
+ * `readings` is on the question itself in 'meaning' mode (kanji shown, reading practice
  * for that one kanji) and on each option in 'kanji' mode (every kanji option shown gets
- * its own reading, regardless of which one is picked).
+ * its own readings, regardless of which one is picked).
  */
 export function buildQuestion(pool, entry) {
 	const mode = Math.random() < 0.5 ? 'meaning' : 'kanji';
@@ -81,14 +87,14 @@ export function buildQuestion(pool, entry) {
 			{ text: correctMeaning, correct: true },
 			...distractors.map((d) => ({ text: d.text, correct: false }))
 		]);
-		return { mode, prompt: entry.kanji, reading: pickReading(entry), options };
+		return { mode, prompt: entry.kanji, readings: pickReadings(entry), options };
 	}
 
 	const candidates = others.filter((k) => !splitMeanings(k.meaning).includes(correctMeaning));
 	const distractors = uniqueBy(shuffle(candidates), (k) => k.kanji).slice(0, 3);
 	const options = shuffle([
-		{ text: entry.kanji, correct: true, reading: pickReading(entry) },
-		...distractors.map((d) => ({ text: d.kanji, correct: false, reading: pickReading(d) }))
+		{ text: entry.kanji, correct: true, readings: pickReadings(entry) },
+		...distractors.map((d) => ({ text: d.kanji, correct: false, readings: pickReadings(d) }))
 	]);
 	return { mode, prompt: correctMeaning, options };
 }

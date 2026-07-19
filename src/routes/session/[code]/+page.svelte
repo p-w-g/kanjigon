@@ -172,7 +172,7 @@
 			<div class="prompt" class:kanji-prompt={question.mode === 'meaning'}>
 				{#if question.mode === 'meaning'}
 					<div class="kanji-char">{question.prompt}</div>
-					<div class="reading">{question.reading}</div>
+					<div class="reading">{question.readings.join('・')}</div>
 				{:else}
 					{question.prompt}
 				{/if}
@@ -190,7 +190,7 @@
 					>
 						{option.text}
 						{#if question.mode === 'kanji'}
-							<span class="option-reading">{option.reading}</span>
+							<span class="option-reading">{option.readings.join('・')}</span>
 						{/if}
 					</button>
 				{/each}

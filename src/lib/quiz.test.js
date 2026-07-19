@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { splitMeanings, buildQuestion, pickReading } from './quiz.js';
+import { splitMeanings, buildQuestion, pickReadings } from './quiz.js';
 import { kanjiData } from './kanji-data.js';
 
 describe('splitMeanings', () => {
@@ -20,19 +20,33 @@ describe('splitMeanings', () => {
 	});
 });
 
-describe('pickReading', () => {
-	it('prefers onyomi when present', () => {
-		expect(pickReading({ onyomi: ['イチ', 'イツ'], kunyomi: ['ひと-'] })).toBe('イチ');
+describe('pickReadings', () => {
+	it('puts onyomi before kunyomi', () => {
+		expect(pickReadings({ onyomi: ['イチ', 'イツ'], kunyomi: ['ひと-'] })).toEqual([
+			'イチ',
+			'イツ',
+			'ひと-'
+		]);
 	});
 
-	it('falls back to kunyomi when there is no onyomi', () => {
+	it('falls back to kunyomi-only when there is no onyomi', () => {
 		const hatake = kanjiData.find((k) => k.kanji === '畑');
 		expect(hatake.onyomi).toEqual([]);
-		expect(pickReading(hatake)).toBe(hatake.kunyomi[0]);
+		expect(pickReadings(hatake)).toEqual(hatake.kunyomi.slice(0, 3));
 	});
 
-	it('returns an empty string when there is no reading at all', () => {
-		expect(pickReading({ onyomi: [], kunyomi: [] })).toBe('');
+	it('caps at max (default 3), even when a kanji has many more readings', () => {
+		const manyReadings = { onyomi: ['a', 'b'], kunyomi: ['c', 'd', 'e'] };
+		expect(pickReadings(manyReadings)).toEqual(['a', 'b', 'c']);
+	});
+
+	it('supports a custom max', () => {
+		const manyReadings = { onyomi: ['a', 'b'], kunyomi: ['c', 'd', 'e'] };
+		expect(pickReadings(manyReadings, 2)).toEqual(['a', 'b']);
+	});
+
+	it('returns an empty array when there is no reading at all', () => {
+		expect(pickReadings({ onyomi: [], kunyomi: [] })).toEqual([]);
 	});
 });
 
@@ -55,15 +69,15 @@ describe('buildQuestion', () => {
 			}
 		});
 
-		it(`grade ${grade}: carries a reading for every kanji shown, on the entry itself when asking for a meaning`, () => {
+		it(`grade ${grade}: carries readings for every kanji shown, on the entry itself when asking for a meaning`, () => {
 			for (const entry of pool) {
 				const question = buildQuestion(pool, entry);
 				if (question.mode === 'meaning') {
-					expect(question.reading).toBe(pickReading(entry));
+					expect(question.readings).toEqual(pickReadings(entry));
 				} else {
 					for (const option of question.options) {
 						const optionEntry = pool.find((k) => k.kanji === option.text);
-						expect(option.reading).toBe(pickReading(optionEntry));
+						expect(option.readings).toEqual(pickReadings(optionEntry));
 					}
 				}
 			}
