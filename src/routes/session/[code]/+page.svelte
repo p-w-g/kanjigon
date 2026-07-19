@@ -98,11 +98,14 @@
 		answered = true;
 		selectedIndex = idx;
 		const isCorrect = question.options[idx].correct;
-		setTimeout(() => {
-			gradeCurrent(isCorrect ? GRADE.GOOD : GRADE.AGAIN);
-			answered = false;
-			selectedIndex = null;
-		}, 800);
+		setTimeout(
+			() => {
+				gradeCurrent(isCorrect ? GRADE.GOOD : GRADE.AGAIN);
+				answered = false;
+				selectedIndex = null;
+			},
+			isCorrect ? 800 : 3000
+		);
 	}
 
 	onMount(() => {

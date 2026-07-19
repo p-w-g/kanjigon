@@ -57,10 +57,12 @@ try {
 	await page.waitForSelector('.option.correct', { timeout: 2_000 });
 
 	const promptBefore = await page.textContent('.prompt');
+	// Timeout must clear the 3s hold on a wrong answer (this test clicks the
+	// first rendered option, which may or may not be the correct one).
 	await page.waitForFunction(
 		(prev) => document.querySelector('.prompt')?.textContent !== prev,
 		promptBefore,
-		{ timeout: 3_000 }
+		{ timeout: 4_000 }
 	);
 
 	if (consoleErrors.length) {
