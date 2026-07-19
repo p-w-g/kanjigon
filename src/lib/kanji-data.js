@@ -4,6 +4,27 @@
 
 export const GRADES = [1, 2, 3, 4, 5, 6, 8, 9, 10];
 
+// Grouped the way a Japanese learner thinks about school kanji: 小学
+// (elementary, grades 1-6, labeled by school year) and 中学 (everything
+// else in this dataset — grade 8 is the remaining Jouyou kanji taught from
+// middle school onward, 9/10 are Jinmeiyou/name kanji, so they get labeled
+// for what they actually are rather than a fake 一年/二年/三年).
+export const GRADE_LABELS = {
+  1: "一年",
+  2: "二年",
+  3: "三年",
+  4: "四年",
+  5: "五年",
+  6: "六年",
+  8: "常用漢字",
+  9: "人名用漢字",
+  10: "人名用漢字（異体字）",
+};
+export const GRADE_GROUPS = [
+  { label: "小学", grades: [1, 2, 3, 4, 5, 6] },
+  { label: "中学", grades: [8, 9, 10] },
+];
+
 export const kanjiData = [
   // --- grade 1 ---
   {

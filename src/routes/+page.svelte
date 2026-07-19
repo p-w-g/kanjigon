@@ -1,7 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { kanjiData, GRADES } from '$lib/kanji-data.js';
+	import { kanjiData, GRADES, GRADE_LABELS, GRADE_GROUPS } from '$lib/kanji-data.js';
 	import { getAllGradeStats } from '$lib/db.js';
 	import {
 		encodeSessionConfig,
@@ -9,27 +9,6 @@
 		getRecentSessions,
 		SESSION_SIZES
 	} from '$lib/session.js';
-
-	// Grouped the way a Japanese learner thinks about school kanji: 小学
-	// (elementary, grades 1-6, labeled by school year) and 中学 (everything
-	// else in this dataset — grade 8 is the remaining Jouyou kanji taught from
-	// middle school onward, 9/10 are Jinmeiyou/name kanji, so they get labeled
-	// for what they actually are rather than a fake 一年/二年/三年).
-	const GRADE_LABELS = {
-		1: '一年',
-		2: '二年',
-		3: '三年',
-		4: '四年',
-		5: '五年',
-		6: '六年',
-		8: '常用漢字',
-		9: '人名用漢字',
-		10: '人名用漢字（異体字）'
-	};
-	const GROUPS = [
-		{ label: '小学', grades: [1, 2, 3, 4, 5, 6] },
-		{ label: '中学', grades: [8, 9, 10] }
-	];
 
 	let gradeSummaries = $state([]); // [{grade, kanji, label, total, reviewedPct, learnedPct}]
 	let selectedGrades = $state(new Set());
@@ -120,7 +99,7 @@
 	{#if !ready}
 		<p class="loading">Loading…</p>
 	{:else}
-		{#each GROUPS as group}
+		{#each GRADE_GROUPS as group}
 			<section class="grade-group">
 				<h2 class="group-label">{group.label}</h2>
 				<div class="grade-summary">
@@ -157,6 +136,7 @@
 			Replay
 		</button>
 	</div>
+	<button class="glossary" onclick={() => goto('/glossary')}>Glossary</button>
 </main>
 
 <dialog bind:this={dialogEl}>
@@ -370,6 +350,16 @@
 
 	.replay:disabled {
 		opacity: 0.5;
+	}
+
+	.glossary {
+		padding: 0.9rem 1rem;
+		border: 1px solid var(--surface-2);
+		border-radius: 0.6rem;
+		background: var(--surface);
+		color: var(--text);
+		font-weight: 600;
+		font-size: 1rem;
 	}
 
 	.empty-recent {
