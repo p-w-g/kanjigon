@@ -24,6 +24,7 @@
 	let answered = $state(false);
 	let selectedIndex = $state(null);
 	let ready = $state(false);
+	let quitDialogEl;
 
 	let question = $derived(current ? buildQuestion(combinedPool, current.meta) : null);
 
@@ -79,6 +80,19 @@
 		if (!current) advancePhase();
 	}
 
+	function openQuitDialog() {
+		quitDialogEl.showModal();
+	}
+
+	function closeQuitDialog() {
+		quitDialogEl.close();
+	}
+
+	function confirmQuit() {
+		quitDialogEl.close();
+		goto('/');
+	}
+
 	function answer(idx) {
 		if (answered || !question) return;
 		answered = true;
@@ -108,7 +122,12 @@
 	<main>
 		<header>
 			<h1>{phase === 'review' ? 'Review round' : 'Session'}</h1>
-			<div class="remaining">{queue.length} left</div>
+			<div class="header-right">
+				<div class="remaining">{queue.length} left</div>
+				{#if phase !== 'summary'}
+					<button class="quit" onclick={openQuitDialog}>Quit</button>
+				{/if}
+			</div>
 		</header>
 
 		{#if !ready}
@@ -138,6 +157,15 @@
 			</div>
 		{/if}
 	</main>
+
+	<dialog bind:this={quitDialogEl}>
+		<h2>Quit this session?</h2>
+		<p>Your progress so far is saved.</p>
+		<div class="dialog-actions">
+			<button type="button" onclick={closeQuitDialog}>Cancel</button>
+			<button type="button" class="quit-confirm" onclick={confirmQuit}>Quit</button>
+		</div>
+	</dialog>
 {/if}
 
 <style>
@@ -162,9 +190,71 @@
 		margin: 0;
 	}
 
+	.header-right {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
 	.remaining {
 		font-size: 0.85rem;
 		color: var(--text-dim);
+	}
+
+	.quit {
+		padding: 0.4rem 0.75rem;
+		border: 1px solid var(--surface-2);
+		border-radius: 0.5rem;
+		background: var(--surface);
+		color: var(--text-dim);
+		font-size: 0.8rem;
+		font-weight: 600;
+	}
+
+	dialog {
+		max-width: 380px;
+		width: 90vw;
+		border: none;
+		border-radius: 1rem;
+		padding: 1.25rem;
+		background: var(--surface);
+		color: var(--text);
+	}
+
+	dialog::backdrop {
+		background: rgba(0, 0, 0, 0.5);
+	}
+
+	dialog h2 {
+		margin: 0 0 0.5rem;
+		font-size: 1.1rem;
+	}
+
+	dialog p {
+		margin: 0 0 1.25rem;
+		color: var(--text-dim);
+		font-size: 0.9rem;
+	}
+
+	.dialog-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.5rem;
+	}
+
+	.dialog-actions button {
+		padding: 0.6rem 1rem;
+		border-radius: 0.5rem;
+		border: 1px solid var(--surface-2);
+		background: var(--surface-2);
+		color: var(--text);
+		font-weight: 600;
+	}
+
+	.dialog-actions .quit-confirm {
+		background: var(--again);
+		border-color: var(--again);
+		color: white;
 	}
 
 	.prompt {
