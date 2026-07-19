@@ -5,7 +5,28 @@
 	import { getAllGradeStats } from '$lib/db.js';
 	import { encodeSessionConfig, SESSION_SIZES } from '$lib/session.js';
 
-	let gradeSummaries = $state([]); // [{grade, kanji, total, reviewedPct, learnedPct}]
+	// Grouped the way a Japanese learner thinks about school kanji: 小学
+	// (elementary, grades 1-6, labeled by school year) and 中学 (everything
+	// else in this dataset — grade 8 is the remaining Jouyou kanji taught from
+	// middle school onward, 9/10 are Jinmeiyou/name kanji, so they get labeled
+	// for what they actually are rather than a fake 一年/二年/三年).
+	const GRADE_LABELS = {
+		1: '一年',
+		2: '二年',
+		3: '三年',
+		4: '四年',
+		5: '五年',
+		6: '六年',
+		8: '常用漢字',
+		9: '人名用漢字',
+		10: '人名用漢字（異体字）'
+	};
+	const GROUPS = [
+		{ label: '小学', grades: [1, 2, 3, 4, 5, 6] },
+		{ label: '中学', grades: [8, 9, 10] }
+	];
+
+	let gradeSummaries = $state([]); // [{grade, kanji, label, total, reviewedPct, learnedPct}]
 	let selectedGrades = $state(new Set());
 	let sessionSize = $state(20);
 	let reviewAfter = $state(true);
@@ -21,6 +42,7 @@
 			return {
 				grade: g,
 				kanji: gradeKanji[0].kanji,
+				label: GRADE_LABELS[g],
 				total: gradeKanji.length,
 				reviewedPct: rec ? Math.round((rec.reviewed / gradeKanji.length) * 100) : 0,
 				learnedPct: rec ? Math.round((rec.learned / gradeKanji.length) * 100) : 0
@@ -70,26 +92,35 @@
 	{#if !ready}
 		<p class="loading">Loading…</p>
 	{:else}
-		<div class="grade-summary">
-			{#each gradeSummaries as g}
-				<div class="grade-row">
-					<span class="grade-kanji">{g.kanji}</span>
-					<span class="grade-label">Grade {g.grade}</span>
-					<div class="grade-bars">
-						<div class="bar-row">
-							<span class="bar-label">reviewed</span>
-							<div class="bar"><div class="bar-fill reviewed" style="width: {g.reviewedPct}%"></div></div>
-							<span class="bar-pct">{g.reviewedPct}%</span>
+		{#each GROUPS as group}
+			<section class="grade-group">
+				<h2 class="group-label">{group.label}</h2>
+				<div class="grade-summary">
+					{#each gradeSummaries.filter((g) => group.grades.includes(g.grade)) as g}
+						<div class="grade-row">
+							<span class="grade-kanji">{g.kanji}</span>
+							<span class="grade-label">{g.label}</span>
+							<div class="grade-bars">
+								<div class="bar-row">
+									<span class="bar-label">reviewed</span>
+									<div class="bar">
+										<div class="bar-fill reviewed" style="width: {g.reviewedPct}%"></div>
+									</div>
+									<span class="bar-pct">{g.reviewedPct}%</span>
+								</div>
+								<div class="bar-row">
+									<span class="bar-label">learned</span>
+									<div class="bar">
+										<div class="bar-fill learned" style="width: {g.learnedPct}%"></div>
+									</div>
+									<span class="bar-pct">{g.learnedPct}%</span>
+								</div>
+							</div>
 						</div>
-						<div class="bar-row">
-							<span class="bar-label">learned</span>
-							<div class="bar"><div class="bar-fill learned" style="width: {g.learnedPct}%"></div></div>
-							<span class="bar-pct">{g.learnedPct}%</span>
-						</div>
-					</div>
+					{/each}
 				</div>
-			{/each}
-		</div>
+			</section>
+		{/each}
 	{/if}
 
 	<button class="run-new" onclick={openDialog}>New quiz!</button>
@@ -165,6 +196,19 @@
 		align-items: center;
 		justify-content: center;
 		color: var(--text-dim);
+	}
+
+	.grade-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.group-label {
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: var(--text-dim);
+		margin: 0;
 	}
 
 	.grade-summary {
