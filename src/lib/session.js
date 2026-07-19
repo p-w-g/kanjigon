@@ -1,6 +1,54 @@
 // Pure session-queue ordering logic, kept separate from UI so it's easy to
 // unit test (mirrors how quiz.js separates question-building from the UI).
 
+import { GRADES } from './kanji-data.js';
+
+// Discrete steps offered by the "how many kanji" dropdown on the home screen.
+export const SESSION_SIZES = [20, 30, 40, 50];
+
+/**
+ * Packs a session config into a short, self-contained, URL-safe code (no
+ * server/storage lookup needed to resolve it later — the code itself IS the
+ * config) so a session can be bookmarked/revisited via /session/<code>.
+ * Layout: bits 0-8 = one bit per GRADES entry, bits 9-10 = SESSION_SIZES
+ * index, bit 11 = review flag. Fits in 12 bits -> at most 3 base36 chars.
+ * @param {{ grades: number[], count: number, review: boolean }} config
+ * @returns {string}
+ */
+export function encodeSessionConfig({ grades, count, review }) {
+	let gradeBits = 0;
+	for (const g of grades) {
+		const idx = GRADES.indexOf(g);
+		if (idx === -1) throw new Error(`invalid grade ${g}`);
+		gradeBits |= 1 << idx;
+	}
+	const countIndex = SESSION_SIZES.indexOf(count);
+	if (countIndex === -1) throw new Error(`invalid session size ${count}`);
+	const value = gradeBits | (countIndex << GRADES.length) | ((review ? 1 : 0) << (GRADES.length + 2));
+	return value.toString(36);
+}
+
+/**
+ * Inverse of encodeSessionConfig. Returns null for any malformed/invalid
+ * code (stale link, hand-edited URL, etc.) so the caller can redirect home.
+ * @param {string} code
+ * @returns {{ grades: number[], count: number, review: boolean } | null}
+ */
+export function decodeSessionConfig(code) {
+	const value = parseInt(code, 36);
+	if (!Number.isInteger(value) || value < 0) return null;
+
+	const gradeBits = value & ((1 << GRADES.length) - 1);
+	const countIndex = (value >> GRADES.length) & 0b11;
+	const reviewBit = (value >> (GRADES.length + 2)) & 1;
+
+	const grades = GRADES.filter((_, i) => (gradeBits >> i) & 1);
+	const count = SESSION_SIZES[countIndex];
+	if (grades.length === 0 || count === undefined) return null;
+
+	return { grades, count, review: reviewBit === 1 };
+}
+
 /**
  * Due-first, then fewest-repetitions-first (prioritizes unlearned cards).
  * @param {{meta: object, progress: {dueAt: number, repetitions: number}}[]} items
