@@ -101,7 +101,7 @@
 		</div>
 	{/if}
 
-	<button class="run-new" onclick={openDialog}>Run new session</button>
+	<button class="run-new" onclick={openDialog}>New quiz!</button>
 </main>
 
 <dialog bind:this={dialogEl}>

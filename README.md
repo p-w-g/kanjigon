@@ -21,7 +21,7 @@ server.
 
 The home screen (`/`) shows, per grade, **% reviewed** (ever quizzed) and
 **% learned** (answered correctly enough times to clear the SRS threshold).
-"Run new session" opens a dialog to pick which grade(s) to mix, how many
+"New quiz!" opens a dialog to pick which grade(s) to mix, how many
 kanji to quiz (20-50), and whether to run a review round afterward.
 
 A session (`/session/<code>`, where `<code>` is a short base36 code that
