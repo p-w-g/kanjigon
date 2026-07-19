@@ -34,6 +34,16 @@ function shuffle(arr) {
 	return copy;
 }
 
+/**
+ * Picks one reading to display alongside a kanji during quiz — onyomi
+ * preferred, falling back to kunyomi (some kanji, e.g. 王, have no onyomi).
+ * @param {{onyomi: string[], kunyomi: string[]}} entry
+ * @returns {string}
+ */
+export function pickReading(entry) {
+	return entry.onyomi[0] ?? entry.kunyomi[0] ?? '';
+}
+
 function uniqueBy(arr, key) {
 	const seen = new Set();
 	const out = [];
@@ -47,9 +57,12 @@ function uniqueBy(arr, key) {
 }
 
 /**
- * @param {{kanji: string, meaning: string}[]} pool same-grade kanji metas
- * @param {{kanji: string, meaning: string}} entry the kanji being quizzed
- * @returns {{ mode: 'meaning'|'kanji', prompt: string, options: {text: string, correct: boolean}[] }}
+ * @param {{kanji: string, meaning: string, onyomi: string[], kunyomi: string[]}[]} pool same-grade kanji metas
+ * @param {{kanji: string, meaning: string, onyomi: string[], kunyomi: string[]}} entry the kanji being quizzed
+ * @returns {{ mode: 'meaning'|'kanji', prompt: string, reading?: string, options: {text: string, correct: boolean, reading?: string}[] }}
+ * `reading` is on the question itself in 'meaning' mode (kanji shown, reading practice
+ * for that one kanji) and on each option in 'kanji' mode (every kanji option shown gets
+ * its own reading, regardless of which one is picked).
  */
 export function buildQuestion(pool, entry) {
 	const mode = Math.random() < 0.5 ? 'meaning' : 'kanji';
@@ -68,14 +81,14 @@ export function buildQuestion(pool, entry) {
 			{ text: correctMeaning, correct: true },
 			...distractors.map((d) => ({ text: d.text, correct: false }))
 		]);
-		return { mode, prompt: entry.kanji, options };
+		return { mode, prompt: entry.kanji, reading: pickReading(entry), options };
 	}
 
 	const candidates = others.filter((k) => !splitMeanings(k.meaning).includes(correctMeaning));
 	const distractors = uniqueBy(shuffle(candidates), (k) => k.kanji).slice(0, 3);
 	const options = shuffle([
-		{ text: entry.kanji, correct: true },
-		...distractors.map((d) => ({ text: d.kanji, correct: false }))
+		{ text: entry.kanji, correct: true, reading: pickReading(entry) },
+		...distractors.map((d) => ({ text: d.kanji, correct: false, reading: pickReading(d) }))
 	]);
 	return { mode, prompt: correctMeaning, options };
 }

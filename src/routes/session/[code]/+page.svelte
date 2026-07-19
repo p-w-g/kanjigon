@@ -141,7 +141,12 @@
 			</div>
 		{:else}
 			<div class="prompt" class:kanji-prompt={question.mode === 'meaning'}>
-				{question.prompt}
+				{#if question.mode === 'meaning'}
+					<div class="kanji-char">{question.prompt}</div>
+					<div class="reading">{question.reading}</div>
+				{:else}
+					{question.prompt}
+				{/if}
 			</div>
 
 			<div class="options" class:grid={question.mode === 'kanji'}>
@@ -155,6 +160,9 @@
 						onclick={() => answer(i)}
 					>
 						{option.text}
+						{#if question.mode === 'kanji'}
+							<span class="option-reading">{option.reading}</span>
+						{/if}
 					</button>
 				{/each}
 			</div>
@@ -276,8 +284,19 @@
 	}
 
 	.prompt.kanji-prompt {
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.kanji-char {
 		font-size: 6rem;
 		line-height: 1;
+	}
+
+	.reading {
+		font-size: 1.1rem;
+		font-weight: 400;
+		color: var(--text-dim);
 	}
 
 	.options {
@@ -302,8 +321,19 @@
 	}
 
 	.option.kanji-option {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
 		font-size: 2.5rem;
 		padding: 1.25rem 0;
+	}
+
+	.option-reading {
+		font-size: 0.85rem;
+		font-weight: 400;
+		color: inherit;
+		opacity: 0.7;
 	}
 
 	.option.correct {

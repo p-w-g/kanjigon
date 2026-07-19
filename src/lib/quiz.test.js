@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { splitMeanings, buildQuestion } from './quiz.js';
+import { splitMeanings, buildQuestion, pickReading } from './quiz.js';
 import { kanjiData } from './kanji-data.js';
 
 describe('splitMeanings', () => {
@@ -20,6 +20,22 @@ describe('splitMeanings', () => {
 	});
 });
 
+describe('pickReading', () => {
+	it('prefers onyomi when present', () => {
+		expect(pickReading({ onyomi: ['イチ', 'イツ'], kunyomi: ['ひと-'] })).toBe('イチ');
+	});
+
+	it('falls back to kunyomi when there is no onyomi', () => {
+		const hatake = kanjiData.find((k) => k.kanji === '畑');
+		expect(hatake.onyomi).toEqual([]);
+		expect(pickReading(hatake)).toBe(hatake.kunyomi[0]);
+	});
+
+	it('returns an empty string when there is no reading at all', () => {
+		expect(pickReading({ onyomi: [], kunyomi: [] })).toBe('');
+	});
+});
+
 describe('buildQuestion', () => {
 	const grades = [1, 8];
 
@@ -36,6 +52,20 @@ describe('buildQuestion', () => {
 
 				const texts = question.options.map((o) => o.text);
 				expect(new Set(texts).size).toBe(4);
+			}
+		});
+
+		it(`grade ${grade}: carries a reading for every kanji shown, on the entry itself when asking for a meaning`, () => {
+			for (const entry of pool) {
+				const question = buildQuestion(pool, entry);
+				if (question.mode === 'meaning') {
+					expect(question.reading).toBe(pickReading(entry));
+				} else {
+					for (const option of question.options) {
+						const optionEntry = pool.find((k) => k.kanji === option.text);
+						expect(option.reading).toBe(pickReading(optionEntry));
+					}
+				}
 			}
 		});
 
