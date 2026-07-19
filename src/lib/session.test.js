@@ -4,6 +4,8 @@ import {
 	encodeSessionConfig,
 	decodeSessionConfig,
 	summarizeSession,
+	addRecentSession,
+	MAX_RECENT_SESSIONS,
 	SESSION_SIZES
 } from './session.js';
 import { GRADES } from './kanji-data.js';
@@ -104,5 +106,37 @@ describe('summarizeSession', () => {
 			missed: 5,
 			stillIncorrect: 2
 		});
+	});
+});
+
+describe('addRecentSession', () => {
+	it('adds a new code to the front', () => {
+		const result = addRecentSession([{ code: 'a', ts: 1 }], 'b', 2);
+		expect(result).toEqual([
+			{ code: 'b', ts: 2 },
+			{ code: 'a', ts: 1 }
+		]);
+	});
+
+	it('moves a re-played code to the front instead of duplicating it', () => {
+		const result = addRecentSession(
+			[
+				{ code: 'a', ts: 1 },
+				{ code: 'b', ts: 2 }
+			],
+			'a',
+			3
+		);
+		expect(result).toEqual([
+			{ code: 'a', ts: 3 },
+			{ code: 'b', ts: 2 }
+		]);
+	});
+
+	it('caps the list at MAX_RECENT_SESSIONS', () => {
+		const list = Array.from({ length: MAX_RECENT_SESSIONS }, (_, i) => ({ code: `c${i}`, ts: i }));
+		const result = addRecentSession(list, 'new', 999);
+		expect(result).toHaveLength(MAX_RECENT_SESSIONS);
+		expect(result[0]).toEqual({ code: 'new', ts: 999 });
 	});
 });

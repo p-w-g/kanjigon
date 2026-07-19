@@ -75,3 +75,37 @@ export function sortByDueThenRepetitions(items) {
 export function summarizeSession({ total, missed, stillIncorrect }) {
 	return { total, correctFirstTry: total - missed, missed, stillIncorrect };
 }
+
+// How many past sessions the home screen's "Replay" list remembers.
+export const MAX_RECENT_SESSIONS = 10;
+const RECENT_SESSIONS_KEY = 'kanjigon:recent-sessions';
+
+/**
+ * Pushes `code` to the front of a recent-sessions list, deduping an existing
+ * entry for the same code (so replaying moves it back to the top rather than
+ * creating a second entry) and capping at MAX_RECENT_SESSIONS. Kept as a pure
+ * function so it's testable without a DOM/localStorage environment — the
+ * localStorage read/write itself is thin glue, see recordRecentSession below.
+ * @param {{code: string, ts: number}[]} list newest-first
+ * @param {string} code
+ * @param {number} [ts]
+ * @returns {{code: string, ts: number}[]}
+ */
+export function addRecentSession(list, code, ts = Date.now()) {
+	return [{ code, ts }, ...list.filter((s) => s.code !== code)].slice(0, MAX_RECENT_SESSIONS);
+}
+
+/** @param {string} code */
+export function recordRecentSession(code) {
+	localStorage.setItem(RECENT_SESSIONS_KEY, JSON.stringify(addRecentSession(getRecentSessions(), code)));
+}
+
+/** @returns {{code: string, ts: number}[]} newest-first */
+export function getRecentSessions() {
+	try {
+		const list = JSON.parse(localStorage.getItem(RECENT_SESSIONS_KEY) ?? '[]');
+		return Array.isArray(list) ? list : [];
+	} catch {
+		return [];
+	}
+}

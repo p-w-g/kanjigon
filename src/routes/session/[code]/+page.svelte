@@ -6,7 +6,12 @@
 	import { getOrCreateProgress, saveProgress } from '$lib/db.js';
 	import { schedule, newCardState, GRADE } from '$lib/srs.js';
 	import { buildQuestion } from '$lib/quiz.js';
-	import { sortByDueThenRepetitions, decodeSessionConfig, summarizeSession } from '$lib/session.js';
+	import {
+		sortByDueThenRepetitions,
+		decodeSessionConfig,
+		summarizeSession,
+		recordRecentSession
+	} from '$lib/session.js';
 
 	const config = decodeSessionConfig(page.params.code);
 	const validConfig = config !== null;
@@ -36,6 +41,7 @@
 	);
 
 	async function initSession() {
+		recordRecentSession(page.params.code);
 		const withProgress = await Promise.all(
 			combinedPool.map(async (meta) => {
 				const progress = await getOrCreateProgress(meta.kanji, meta.grade, newCardState);

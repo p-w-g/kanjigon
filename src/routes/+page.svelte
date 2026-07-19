@@ -3,7 +3,12 @@
 	import { goto } from '$app/navigation';
 	import { kanjiData, GRADES } from '$lib/kanji-data.js';
 	import { getAllGradeStats } from '$lib/db.js';
-	import { encodeSessionConfig, SESSION_SIZES } from '$lib/session.js';
+	import {
+		encodeSessionConfig,
+		decodeSessionConfig,
+		getRecentSessions,
+		SESSION_SIZES
+	} from '$lib/session.js';
 
 	// Grouped the way a Japanese learner thinks about school kanji: 小学
 	// (elementary, grades 1-6, labeled by school year) and 中学 (everything
@@ -31,7 +36,11 @@
 	let sessionSize = $state(20);
 	let reviewAfter = $state(true);
 	let ready = $state(false);
+	let recentSessions = $state([]); // [{code, ts, config}]
 	let dialogEl;
+	let replayDialogEl;
+
+	let kanjiByGrade = $derived(new Map(gradeSummaries.map((g) => [g.grade, g.kanji])));
 
 	async function loadStats() {
 		ready = false;
@@ -59,6 +68,24 @@
 		dialogEl.close();
 	}
 
+	function loadRecentSessions() {
+		recentSessions = getRecentSessions()
+			.map((s) => ({ ...s, config: decodeSessionConfig(s.code) }))
+			.filter((s) => s.config !== null);
+	}
+
+	function openReplayDialog() {
+		replayDialogEl.showModal();
+	}
+
+	function closeReplayDialog() {
+		replayDialogEl.close();
+	}
+
+	function replaySession(code) {
+		goto(`/session/${code}`);
+	}
+
 	function toggleGrade(g) {
 		if (selectedGrades.has(g)) selectedGrades.delete(g);
 		else selectedGrades.add(g);
@@ -77,6 +104,7 @@
 
 	onMount(() => {
 		loadStats();
+		loadRecentSessions();
 	});
 </script>
 
@@ -123,7 +151,12 @@
 		{/each}
 	{/if}
 
-	<button class="run-new" onclick={openDialog}>New quiz!</button>
+	<div class="actions">
+		<button class="run-new" onclick={openDialog}>New quiz!</button>
+		<button class="replay" disabled={recentSessions.length === 0} onclick={openReplayDialog}>
+			Replay
+		</button>
+	</div>
 </main>
 
 <dialog bind:this={dialogEl}>
@@ -166,6 +199,31 @@
 		<button type="button" class="start" disabled={selectedGrades.size === 0} onclick={startSession}>
 			Start
 		</button>
+	</div>
+</dialog>
+
+<dialog bind:this={replayDialogEl}>
+	<h2>Replay a session</h2>
+
+	{#if recentSessions.length === 0}
+		<p class="empty-recent">No sessions yet.</p>
+	{:else}
+		<div class="recent-list">
+			{#each recentSessions as s}
+				<button type="button" class="recent-row" onclick={() => replaySession(s.code)}>
+					<span class="recent-kanji">
+						{s.config.grades.map((g) => kanjiByGrade.get(g)).join(' ')}
+					</span>
+					<span class="recent-meta">
+						{s.config.count} kanji{s.config.review ? ' · review' : ''}
+					</span>
+				</button>
+			{/each}
+		</div>
+	{/if}
+
+	<div class="dialog-actions">
+		<button type="button" onclick={closeReplayDialog}>Close</button>
 	</div>
 </dialog>
 
@@ -283,7 +341,13 @@
 		text-align: right;
 	}
 
+	.actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
 	.run-new {
+		flex: 1;
 		padding: 0.9rem 1rem;
 		border: none;
 		border-radius: 0.6rem;
@@ -291,6 +355,57 @@
 		color: white;
 		font-weight: 600;
 		font-size: 1rem;
+	}
+
+	.replay {
+		flex: 1;
+		padding: 0.9rem 1rem;
+		border: 1px solid var(--surface-2);
+		border-radius: 0.6rem;
+		background: var(--surface);
+		color: var(--text);
+		font-weight: 600;
+		font-size: 1rem;
+	}
+
+	.replay:disabled {
+		opacity: 0.5;
+	}
+
+	.empty-recent {
+		color: var(--text-dim);
+		font-size: 0.9rem;
+		margin: 0 0 1rem;
+	}
+
+	.recent-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+		max-height: 50vh;
+		overflow-y: auto;
+	}
+
+	.recent-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(--surface-2);
+		border-radius: 0.6rem;
+		background: var(--surface-2);
+		color: var(--text);
+		text-align: left;
+	}
+
+	.recent-kanji {
+		font-size: 1.1rem;
+	}
+
+	.recent-meta {
+		font-size: 0.75rem;
+		color: var(--text-dim);
 	}
 
 	dialog {
