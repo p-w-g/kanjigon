@@ -3,32 +3,17 @@ import Dexie from 'dexie';
 // All review progress lives in IndexedDB via Dexie. This is what makes the
 // SRS state survive being fully offline (on a plane, etc.) — it's not
 // relying on network sync of any kind, it's local-first by default.
-export const db = new Dexie('kanjiFlashDB');
+export const db = new Dexie('kanjigonDB');
 
 db.version(1).stores({
 	// key = kanji character itself (unique), indexed by dueAt so we can
 	// cheaply query "what's due right now" without scanning everything.
+	// Records also carry `attempts` (times ever quizzed, win or lose) so
+	// "% reviewed" can be told apart from "% learned" — `repetitions` alone
+	// can't do that since it resets to 0 on any failure, same as a
+	// never-touched card. No index needed since nothing queries by attempts.
 	progress: 'kanji, dueAt, level'
 });
-
-// v2 adds `attempts` (times ever quizzed, win or lose) so "% reviewed" can be
-// told apart from "% learned" — `repetitions` alone can't do that since it
-// resets to 0 on any failure, same as a never-touched card. No new index
-// needed since nothing queries/sorts by attempts.
-db.version(2)
-	.stores({
-		progress: 'kanji, dueAt, level'
-	})
-	.upgrade(async (tx) => {
-		await tx
-			.table('progress')
-			.toCollection()
-			.modify((rec) => {
-				if (rec.attempts === undefined) {
-					rec.attempts = rec.repetitions > 0 ? rec.repetitions : 0;
-				}
-			});
-	});
 
 /** @param {string} kanji @param {string} level */
 export async function getOrCreateProgress(kanji, level, newCardState) {

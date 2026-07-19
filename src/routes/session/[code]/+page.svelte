@@ -101,7 +101,7 @@
 </script>
 
 <svelte:head>
-	<title>Kanji Flash — {phase === 'review' ? 'Review' : 'Session'}</title>
+	<title>漢字ゴン — {phase === 'review' ? 'Review' : 'Session'}</title>
 </svelte:head>
 
 {#if validConfig}

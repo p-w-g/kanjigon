@@ -1,4 +1,4 @@
-# Kanji Flash
+# Kanjigon
 
 Offline-first kanji quiz, grouped by Japanese school grade. Built as a PWA so it works
 with zero internet access once loaded — no app store, no account, no sync

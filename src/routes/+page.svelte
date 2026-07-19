@@ -65,12 +65,12 @@
 </script>
 
 <svelte:head>
-	<title>Kanji Flash</title>
+	<title>漢字ゴン</title>
 </svelte:head>
 
 <main>
 	<header>
-		<h1>漢字 Flash</h1>
+		<h1>漢字ゴン</h1>
 		<div class="badge" class:on={offlineReady} title="Offline caching status">
 			{offlineReady ? '● offline-ready' : '○ loading…'}
 		</div>
