@@ -26,7 +26,7 @@
 	let current = $state(null);
 	let failedSet = $state(new Set()); // kanji failed at least once during the main phase
 	let everMissed = $state(new Set()); // kanji ever wrong, never cleared — for the summary screen
-	let sessionTotal = $state(0); // kanji count at the start of the main phase
+	let attemptedSet = $state(new Set()); // every kanji graded at least once — for the summary screen
 	let progressByKanji = new Map(); // kanji -> latest saved progress record (plain, not reactive)
 	let answered = $state(false);
 	let selectedIndex = $state(null);
@@ -36,7 +36,11 @@
 	let question = $derived(current ? buildQuestion(combinedPool, current.meta) : null);
 	let summary = $derived(
 		phase === 'summary'
-			? summarizeSession({ total: sessionTotal, missed: everMissed.size, stillIncorrect: failedSet.size })
+			? summarizeSession({
+					total: attemptedSet.size,
+					missed: everMissed.size,
+					stillIncorrect: failedSet.size
+				})
 			: null
 	);
 
@@ -50,7 +54,6 @@
 			})
 		);
 		queue = sortByDueThenRepetitions(withProgress).slice(0, count);
-		sessionTotal = queue.length;
 		current = queue[0] ?? null;
 		ready = true;
 	}
@@ -79,6 +82,8 @@
 		};
 		await saveProgress(record);
 		progressByKanji.set(current.meta.kanji, record);
+		attemptedSet.add(current.meta.kanji);
+		attemptedSet = new Set(attemptedSet);
 
 		const rest = queue.slice(1);
 		if (g < GRADE.HARD) {
@@ -108,7 +113,7 @@
 
 	function confirmQuit() {
 		quitDialogEl.close();
-		goto('/');
+		phase = 'summary';
 	}
 
 	function answer(idx) {
@@ -136,13 +141,13 @@
 </script>
 
 <svelte:head>
-	<title>漢字ゴン — {phase === 'review' ? 'Review' : 'Session'}</title>
+	<title>漢字ゴン — Quiz!</title>
 </svelte:head>
 
 {#if validConfig}
 	<main>
 		<header>
-			<h1>{phase === 'review' ? 'Review round' : phase === 'summary' ? 'Summary' : 'Session'}</h1>
+			<h1>Quiz!</h1>
 			{#if phase !== 'summary'}
 				<div class="header-right">
 					<div class="remaining">{queue.length} left</div>
