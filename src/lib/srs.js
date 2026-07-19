@@ -50,6 +50,7 @@ export function newCardState() {
 		repetitions: 0,
 		interval: 0,
 		easeFactor: 2.5,
-		dueAt: Date.now()
+		dueAt: Date.now(),
+		attempts: 0
 	};
 }

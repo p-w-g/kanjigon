@@ -11,6 +11,25 @@ db.version(1).stores({
 	progress: 'kanji, dueAt, level'
 });
 
+// v2 adds `attempts` (times ever quizzed, win or lose) so "% reviewed" can be
+// told apart from "% learned" — `repetitions` alone can't do that since it
+// resets to 0 on any failure, same as a never-touched card. No new index
+// needed since nothing queries/sorts by attempts.
+db.version(2)
+	.stores({
+		progress: 'kanji, dueAt, level'
+	})
+	.upgrade(async (tx) => {
+		await tx
+			.table('progress')
+			.toCollection()
+			.modify((rec) => {
+				if (rec.attempts === undefined) {
+					rec.attempts = rec.repetitions > 0 ? rec.repetitions : 0;
+				}
+			});
+	});
+
 /** @param {string} kanji @param {string} level */
 export async function getOrCreateProgress(kanji, level, newCardState) {
 	const existing = await db.progress.get(kanji);
@@ -34,12 +53,26 @@ export async function getDueCards(level, limit = 20) {
 		.toArray();
 }
 
-export async function getStats(level) {
-	const all = await db.progress.where('level').equals(level).toArray();
+/**
+ * Bulk per-grade stats for the home screen — one query for every grade at
+ * once rather than one round-trip per grade. Counts are of DB rows (kanji
+ * ever touched); callers divide by each grade's full kanji count (from
+ * kanji-data.js) to get percentages, since untouched kanji have no row yet.
+ * @returns {Promise<Map<number, { reviewed: number, learned: number, due: number }>>}
+ */
+export async function getAllGradeStats() {
+	const all = await db.progress.toArray();
 	const now = Date.now();
-	return {
-		total: all.length,
-		due: all.filter((c) => c.dueAt <= now).length,
-		learned: all.filter((c) => c.repetitions >= 3).length
-	};
+	const byGrade = new Map();
+	for (const rec of all) {
+		let g = byGrade.get(rec.level);
+		if (!g) {
+			g = { reviewed: 0, learned: 0, due: 0 };
+			byGrade.set(rec.level, g);
+		}
+		if ((rec.attempts ?? 0) >= 1) g.reviewed++;
+		if (rec.repetitions >= 3) g.learned++;
+		if (rec.dueAt <= now) g.due++;
+	}
+	return byGrade;
 }
