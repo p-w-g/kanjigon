@@ -133,14 +133,15 @@
 		<legend>Grades</legend>
 		<div class="grade-checks">
 			{#each gradeSummaries as g}
-				<label class="grade-check">
+				<label class="grade-check" class:selected={selectedGrades.has(g.grade)}>
 					<input
 						type="checkbox"
+						class="sr-only"
 						checked={selectedGrades.has(g.grade)}
 						onchange={() => toggleGrade(g.grade)}
 					/>
 					<span class="grade-check-kanji">{g.kanji}</span>
-					<span class="grade-check-label">Grade {g.grade}</span>
+					<span class="grade-check-label">{g.label}</span>
 				</label>
 			{/each}
 		</div>
@@ -329,6 +330,18 @@
 		gap: 0.5rem;
 	}
 
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
 	.grade-check {
 		display: flex;
 		flex-direction: column;
@@ -336,6 +349,16 @@
 		gap: 0.15rem;
 		font-size: 0.7rem;
 		color: var(--text-dim);
+		padding: 0.5rem 0.25rem;
+		border: 1px solid var(--surface-2);
+		border-radius: 0.5rem;
+		cursor: pointer;
+	}
+
+	.grade-check.selected {
+		border-color: var(--accent);
+		outline: 2px solid var(--accent);
+		outline-offset: -2px;
 	}
 
 	.grade-check-kanji {

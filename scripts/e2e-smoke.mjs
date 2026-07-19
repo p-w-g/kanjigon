@@ -45,7 +45,9 @@ try {
 	// exercises the phase-transition logic directly without a browser.
 	await page.click('button.run-new');
 	await page.waitForSelector('dialog[open]', { timeout: 5_000 });
-	await page.check('.grade-check >> nth=0 >> input[type=checkbox]');
+	// The checkbox itself is visually hidden (tile styling handles the
+	// selected state), so click the tile label the way a real user would.
+	await page.click('.grade-check >> nth=0');
 	await page.click('button.start');
 	await page.waitForURL(/\/session\/[a-z0-9]+/, { timeout: 5_000 });
 	await page.waitForSelector('.prompt', { timeout: 15_000 });
