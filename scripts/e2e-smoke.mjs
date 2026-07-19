@@ -37,6 +37,17 @@ try {
 	page.on('pageerror', (err) => consoleErrors.push(String(err)));
 
 	await page.goto(BASE_URL);
+	await page.waitForSelector('.grade-summary', { timeout: 15_000 });
+
+	// Home -> dialog -> pick a grade -> start a session. We deliberately don't
+	// drive a full session (20-50 answers) to completion here — that's slow
+	// for a smoke test and better covered by src/lib/session.test.js, which
+	// exercises the phase-transition logic directly without a browser.
+	await page.click('button.run-new');
+	await page.waitForSelector('dialog[open]', { timeout: 5_000 });
+	await page.check('.grade-check >> nth=0 >> input[type=checkbox]');
+	await page.click('button.start');
+	await page.waitForURL(/\/session\?/, { timeout: 5_000 });
 	await page.waitForSelector('.prompt', { timeout: 15_000 });
 
 	const before = (await page.$$eval('.option', (els) => els.map((e) => e.textContent.trim()))).length;
