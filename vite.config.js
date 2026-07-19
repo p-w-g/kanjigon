@@ -38,7 +38,12 @@ export default defineConfig({
 				]
 			},
 			devOptions: {
-				enabled: true // so you can test offline behavior in `npm run dev` too
+				// Off: generateSW's dev mode tries to precache from a dev-dist
+				// directory Vite never actually writes files into, which just
+				// produces console noise (empty-glob warning, 404s) with no
+				// real SW behavior. Offline behavior is verified for real via
+				// `npm run build && npm run test:e2e` instead.
+				enabled: false
 			}
 		})
 	]
