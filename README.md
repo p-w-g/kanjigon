@@ -24,8 +24,10 @@ The home screen (`/`) shows, per grade, **% reviewed** (ever quizzed) and
 "Run new session" opens a dialog to pick which grade(s) to mix, how many
 kanji to quiz (20-50), and whether to run a review round afterward.
 
-A session (`/session?grades=...&count=...&review=...`) quizzes exactly that
-many kanji. Missed cards get re-queued a few cards later in the same pass
+A session (`/session/<code>`, where `<code>` is a short base36 code that
+packs the grades/count/review choice — self-contained, so the URL alone is
+enough to revisit or bookmark a session config) quizzes exactly that many
+kanji. Missed cards get re-queued a few cards later in the same pass
 rather than vanishing (they don't count as "learned" until answered right
 in a later pass — the SRS repetition count resets to 0 on any miss). If
 "review after" was checked and anything was missed, a review round follows
