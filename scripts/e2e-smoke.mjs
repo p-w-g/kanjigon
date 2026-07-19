@@ -47,7 +47,7 @@ try {
 	await page.waitForSelector('dialog[open]', { timeout: 5_000 });
 	await page.check('.grade-check >> nth=0 >> input[type=checkbox]');
 	await page.click('button.start');
-	await page.waitForURL(/\/session\?/, { timeout: 5_000 });
+	await page.waitForURL(/\/session\/[a-z0-9]+/, { timeout: 5_000 });
 	await page.waitForSelector('.prompt', { timeout: 15_000 });
 
 	const before = (await page.$$eval('.option', (els) => els.map((e) => e.textContent.trim()))).length;

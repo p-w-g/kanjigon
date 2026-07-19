@@ -4,6 +4,7 @@
 	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 	import { kanjiData, GRADES } from '$lib/kanji-data.js';
 	import { getAllGradeStats } from '$lib/db.js';
+	import { encodeSessionConfig, SESSION_SIZES } from '$lib/session.js';
 
 	let gradeSummaries = $state([]); // [{grade, kanji, total, reviewedPct, learnedPct}]
 	let selectedGrades = $state(new Set());
@@ -46,12 +47,12 @@
 
 	function startSession() {
 		if (selectedGrades.size === 0) return;
-		const params = new URLSearchParams({
-			grades: [...selectedGrades].join(','),
-			count: String(sessionSize),
-			review: reviewAfter ? '1' : '0'
+		const code = encodeSessionConfig({
+			grades: [...selectedGrades],
+			count: sessionSize,
+			review: reviewAfter
 		});
-		goto(`/session?${params}`);
+		goto(`/session/${code}`);
 	}
 
 	onMount(() => {
@@ -126,7 +127,7 @@
 	<label class="field">
 		How many kanji
 		<select bind:value={sessionSize}>
-			{#each [20, 30, 40, 50] as n}
+			{#each SESSION_SIZES as n}
 				<option value={n}>{n}</option>
 			{/each}
 		</select>

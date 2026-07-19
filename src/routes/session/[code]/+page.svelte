@@ -2,20 +2,17 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { kanjiData, GRADES } from '$lib/kanji-data.js';
+	import { kanjiData } from '$lib/kanji-data.js';
 	import { getOrCreateProgress, saveProgress } from '$lib/db.js';
 	import { schedule, newCardState, GRADE } from '$lib/srs.js';
 	import { buildQuestion } from '$lib/quiz.js';
-	import { sortByDueThenRepetitions } from '$lib/session.js';
+	import { sortByDueThenRepetitions, decodeSessionConfig } from '$lib/session.js';
 
-	const params = page.url.searchParams;
-	const grades = (params.get('grades') ?? '')
-		.split(',')
-		.map(Number)
-		.filter((g) => GRADES.includes(g));
-	const count = Number(params.get('count'));
-	const review = params.get('review') === '1';
-	const validConfig = grades.length > 0 && Number.isInteger(count) && count > 0;
+	const config = decodeSessionConfig(page.params.code);
+	const validConfig = config !== null;
+	const grades = config?.grades ?? [];
+	const count = config?.count ?? 0;
+	const review = config?.review ?? false;
 
 	const combinedPool = validConfig ? kanjiData.filter((k) => grades.includes(k.grade)) : [];
 
