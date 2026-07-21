@@ -21,12 +21,13 @@
 
 	const combinedPool = validConfig ? kanjiData.filter((k) => grades.includes(k.grade)) : [];
 
-	let phase = $state('main'); // 'main' | 'review' | 'summary'
+	let phase = $state('main'); // 'main' | 'review-splash' | 'review' | 'summary'
 	let queue = $state([]); // [{meta, progress}]
 	let current = $state(null);
 	let failedSet = $state(new Set()); // kanji failed at least once during the main phase
 	let everMissed = $state(new Set()); // kanji ever wrong, never cleared — for the summary screen
 	let attemptedSet = $state(new Set()); // every kanji graded at least once — for the summary screen
+	let reviewRan = $state(false); // whether the review round actually started — gates the "needed a second look" summary line
 	let progressByKanji = new Map(); // kanji -> latest saved progress record (plain, not reactive)
 	let answered = $state(false);
 	let selectedIndex = $state(null);
@@ -39,7 +40,8 @@
 			? summarizeSession({
 					total: attemptedSet.size,
 					missed: everMissed.size,
-					stillIncorrect: failedSet.size
+					stillIncorrect: failedSet.size,
+					reviewRan
 				})
 			: null
 	);
@@ -60,16 +62,21 @@
 
 	function advancePhase() {
 		if (phase === 'main' && review && failedSet.size > 0) {
-			phase = 'review';
-			const items = [...failedSet].map((k) => ({
-				meta: combinedPool.find((m) => m.kanji === k),
-				progress: progressByKanji.get(k)
-			}));
-			queue = sortByDueThenRepetitions(items);
-			current = queue[0] ?? null;
+			phase = 'review-splash';
 		} else {
 			phase = 'summary';
 		}
+	}
+
+	function startReview() {
+		reviewRan = true;
+		phase = 'review';
+		const items = [...failedSet].map((k) => ({
+			meta: combinedPool.find((m) => m.kanji === k),
+			progress: progressByKanji.get(k)
+		}));
+		queue = sortByDueThenRepetitions(items);
+		current = queue[0] ?? null;
 	}
 
 	async function gradeCurrent(g) {
@@ -150,7 +157,9 @@
 			<h1>Quiz!</h1>
 			{#if phase !== 'summary'}
 				<div class="header-right">
-					<div class="remaining">{queue.length} left</div>
+					{#if phase !== 'review-splash'}
+						<div class="remaining">{queue.length} left</div>
+					{/if}
 					<button class="quit" onclick={openQuitDialog}>Quit</button>
 				</div>
 			{/if}
@@ -159,13 +168,19 @@
 		{#if phase === 'summary'}
 			<div class="summary">
 				<p class="summary-headline">{summary.correctFirstTry} / {summary.total} correct first try</p>
-				{#if summary.missed > 0}
+				{#if summary.showSecondLook}
 					<p class="summary-line">{summary.missed} needed a second look</p>
 				{/if}
 				{#if summary.stillIncorrect > 0}
 					<p class="summary-line still-incorrect">{summary.stillIncorrect} still incorrect</p>
 				{/if}
 				<button class="home" onclick={() => goto('/')}>Back to home</button>
+			</div>
+		{:else if phase === 'review-splash'}
+			<div class="summary">
+				<p class="summary-headline">Main run done</p>
+				<p class="summary-line">{failedSet.size} to review</p>
+				<button class="home" onclick={startReview}>Continue to review</button>
 			</div>
 		{:else if !ready}
 			<p class="loading">Loading…</p>

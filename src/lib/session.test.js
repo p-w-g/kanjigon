@@ -82,29 +82,45 @@ describe('encodeSessionConfig / decodeSessionConfig', () => {
 
 describe('summarizeSession', () => {
 	it('reports everything correct first try when nothing was ever missed', () => {
-		expect(summarizeSession({ total: 20, missed: 0, stillIncorrect: 0 })).toEqual({
+		expect(summarizeSession({ total: 20, missed: 0, stillIncorrect: 0, reviewRan: false })).toEqual({
 			total: 20,
 			correctFirstTry: 20,
 			missed: 0,
-			stillIncorrect: 0
+			stillIncorrect: 0,
+			showSecondLook: false
 		});
 	});
 
 	it('subtracts misses from correctFirstTry regardless of whether review fixed them', () => {
-		expect(summarizeSession({ total: 20, missed: 5, stillIncorrect: 0 })).toEqual({
+		expect(summarizeSession({ total: 20, missed: 5, stillIncorrect: 0, reviewRan: true })).toEqual({
 			total: 20,
 			correctFirstTry: 15,
 			missed: 5,
-			stillIncorrect: 0
+			stillIncorrect: 0,
+			showSecondLook: true
 		});
 	});
 
 	it('carries stillIncorrect through unchanged (no review round, or it did not clear everything)', () => {
-		expect(summarizeSession({ total: 20, missed: 5, stillIncorrect: 2 })).toEqual({
+		expect(summarizeSession({ total: 20, missed: 5, stillIncorrect: 2, reviewRan: true })).toEqual({
 			total: 20,
 			correctFirstTry: 15,
 			missed: 5,
-			stillIncorrect: 2
+			stillIncorrect: 2,
+			showSecondLook: true
+		});
+	});
+
+	it('hides the second-look line when review never ran, even though missed > 0', () => {
+		// Without a review round, stillIncorrect always equals missed (nothing
+		// clears it outside the review phase) — showing both lines would just
+		// display the same count twice under different labels.
+		expect(summarizeSession({ total: 20, missed: 5, stillIncorrect: 5, reviewRan: false })).toEqual({
+			total: 20,
+			correctFirstTry: 15,
+			missed: 5,
+			stillIncorrect: 5,
+			showSecondLook: false
 		});
 	});
 });

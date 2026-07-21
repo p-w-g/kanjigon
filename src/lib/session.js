@@ -68,12 +68,22 @@ export function sortByDueThenRepetitions(items) {
  * Turns raw end-of-session counts into the numbers shown on the summary
  * screen. `missed` counts kanji wrong at least once, whether or not a later
  * review round fixed it; `stillIncorrect` is only non-zero when there was no
- * review round (or it didn't cover everything) to clear a miss.
- * @param {{ total: number, missed: number, stillIncorrect: number }} counts
- * @returns {{ total: number, correctFirstTry: number, missed: number, stillIncorrect: number }}
+ * review round (or it didn't cover everything) to clear a miss. Without a
+ * review round, `missed` and `stillIncorrect` are always equal (nothing ever
+ * clears `stillIncorrect` outside the review phase) — `showSecondLook` gates
+ * on `reviewRan` so the summary doesn't show the same count twice under two
+ * different labels in that case.
+ * @param {{ total: number, missed: number, stillIncorrect: number, reviewRan: boolean }} counts
+ * @returns {{ total: number, correctFirstTry: number, missed: number, stillIncorrect: number, showSecondLook: boolean }}
  */
-export function summarizeSession({ total, missed, stillIncorrect }) {
-	return { total, correctFirstTry: total - missed, missed, stillIncorrect };
+export function summarizeSession({ total, missed, stillIncorrect, reviewRan }) {
+	return {
+		total,
+		correctFirstTry: total - missed,
+		missed,
+		stillIncorrect,
+		showSecondLook: reviewRan && missed > 0
+	};
 }
 
 // How many past sessions the home screen's "Replay" list remembers.
