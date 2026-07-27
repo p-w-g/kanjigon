@@ -18,6 +18,10 @@
 	let recentSessions = $state([]); // [{code, ts, config}]
 	let dialogEl;
 	let replayDialogEl;
+	let quickDialogEl;
+	let quickQuizTarget = $state(null); // the grade summary tapped to open the quick-quiz dialog
+
+	const QUICK_QUIZ_SIZE = 20;
 
 	let kanjiByGrade = $derived(new Map(gradeSummaries.map((g) => [g.grade, g.kanji])));
 
@@ -65,6 +69,24 @@
 		goto(`/session/${code}`);
 	}
 
+	function openQuickQuiz(g) {
+		quickQuizTarget = g;
+		quickDialogEl.showModal();
+	}
+
+	function closeQuickQuiz() {
+		quickDialogEl.close();
+	}
+
+	function startQuickQuiz() {
+		const code = encodeSessionConfig({
+			grades: [quickQuizTarget.grade],
+			count: QUICK_QUIZ_SIZE,
+			review: false
+		});
+		goto(`/session/${code}`);
+	}
+
 	function toggleGrade(g) {
 		if (selectedGrades.has(g)) selectedGrades.delete(g);
 		else selectedGrades.add(g);
@@ -104,7 +126,7 @@
 				<h2 class="group-label">{group.label}</h2>
 				<div class="grade-summary">
 					{#each gradeSummaries.filter((g) => group.grades.includes(g.grade)) as g}
-						<div class="grade-row">
+						<button type="button" class="grade-row" onclick={() => openQuickQuiz(g)}>
 							<span class="grade-kanji">{g.kanji}</span>
 							<span class="grade-label">{g.label}</span>
 							<div class="grade-bars">
@@ -123,7 +145,7 @@
 									<span class="bar-pct">{g.learnedPct}%</span>
 								</div>
 							</div>
-						</div>
+						</button>
 					{/each}
 				</div>
 			</section>
@@ -207,6 +229,21 @@
 	</div>
 </dialog>
 
+<dialog bind:this={quickDialogEl} onclick={(e) => e.target === quickDialogEl && closeQuickQuiz()}>
+	<h2>Quick quiz?</h2>
+
+	{#if quickQuizTarget}
+		<p class="quick-quiz-copy">
+			Want a quick {quickQuizTarget.label} quiz? {QUICK_QUIZ_SIZE} kanji, no review round.
+		</p>
+	{/if}
+
+	<div class="dialog-actions">
+		<button type="button" onclick={closeQuickQuiz}>No</button>
+		<button type="button" class="start" onclick={startQuickQuiz}>Yes</button>
+	</div>
+</dialog>
+
 <style>
 	main {
 		max-width: 480px;
@@ -262,8 +299,14 @@
 		gap: 0.25rem 0.75rem;
 		align-items: center;
 		background: var(--surface);
+		border: none;
 		border-radius: 0.75rem;
 		padding: 0.75rem;
+		width: 100%;
+		font: inherit;
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
 	}
 
 	.grade-kanji {
@@ -360,6 +403,12 @@
 		color: var(--text);
 		font-weight: 600;
 		font-size: 1rem;
+	}
+
+	.quick-quiz-copy {
+		color: var(--text-dim);
+		font-size: 0.9rem;
+		margin: 0 0 1rem;
 	}
 
 	.empty-recent {

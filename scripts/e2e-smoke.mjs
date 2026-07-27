@@ -3,6 +3,7 @@
 //   npm run test:e2e
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
+import { decodeSessionConfig } from '../src/lib/session.js';
 
 const PORT = 4173;
 const BASE_URL = `http://localhost:${PORT}`;
@@ -35,6 +36,36 @@ try {
 		if (msg.type() === 'error') consoleErrors.push(msg.text());
 	});
 	page.on('pageerror', (err) => consoleErrors.push(String(err)));
+
+	await page.goto(BASE_URL);
+	await page.waitForSelector('.grade-summary', { timeout: 15_000 });
+
+	// Tapping a grade row opens a "quick quiz for this grade" confirm dialog;
+	// clicking the backdrop (outside the dialog box) must close it without
+	// starting anything.
+	await page.click('.grade-row >> nth=0');
+	await page.waitForSelector('dialog[open]', { timeout: 5_000 });
+	await page.mouse.click(5, 5);
+	const dialogAfterOutsideClick = await page.$('dialog[open]');
+	if (dialogAfterOutsideClick) throw new Error('quick-quiz dialog should close on outside click');
+
+	// Reopening and confirming should start a 20-kanji, no-review session
+	// scoped to just that one grade.
+	await page.click('.grade-row >> nth=0');
+	await page.waitForSelector('dialog[open]', { timeout: 5_000 });
+	await page.click('dialog[open] button.start');
+	await page.waitForURL(/\/session\/[a-z0-9]+/, { timeout: 5_000 });
+	const quickQuizCode = new URL(page.url()).pathname.split('/').pop();
+	const quickQuizConfig = decodeSessionConfig(quickQuizCode);
+	if (
+		!quickQuizConfig ||
+		quickQuizConfig.grades.length !== 1 ||
+		quickQuizConfig.count !== 20 ||
+		quickQuizConfig.review !== false
+	) {
+		throw new Error(`unexpected quick-quiz session config: ${JSON.stringify(quickQuizConfig)}`);
+	}
+	await page.waitForSelector('.prompt', { timeout: 15_000 });
 
 	await page.goto(BASE_URL);
 	await page.waitForSelector('.grade-summary', { timeout: 15_000 });
