@@ -25,6 +25,20 @@ export const GRADE_GROUPS = [
   { label: "中学", grades: [8, 9, 10] },
 ];
 
+// English gloss shown alongside GRADE_LABELS in the glossary, since "一年"
+// etc. isn't self-evident to a learner who can't read grade-level kanji yet.
+export const GRADE_LABELS_EN = {
+  1: "First Grade",
+  2: "Second Grade",
+  3: "Third Grade",
+  4: "Fourth Grade",
+  5: "Fifth Grade",
+  6: "Sixth Grade",
+  8: "Jōyō Kanji",
+  9: "Jinmeiyō Kanji",
+  10: "Jinmeiyō Kanji (Variant)",
+};
+
 export const kanjiData = [
   // --- grade 1 ---
   {

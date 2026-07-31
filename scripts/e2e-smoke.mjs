@@ -98,6 +98,40 @@ try {
 		{ timeout: 4_000 }
 	);
 
+	// Glossary: grade sections are an accordion, open by default, with the
+	// fold state persisted across reloads and a side-nav to escape a long list.
+	await page.goto(`${BASE_URL}/glossary`);
+	await page.waitForSelector('.grade-block', { timeout: 15_000 });
+
+	const openAtStart = await page.$$eval('details.grade-block[open]', (els) => els.length);
+	const totalGrades = await page.$$eval('details.grade-block', (els) => els.length);
+	if (openAtStart !== totalGrades) {
+		throw new Error(`expected all ${totalGrades} grade sections open by default, got ${openAtStart}`);
+	}
+
+	const firstHeaderText = await page.textContent('summary.grade-header >> nth=0');
+	if (!/\d+ kanji/.test(firstHeaderText)) {
+		throw new Error(`expected a kanji count in the grade header, got "${firstHeaderText}"`);
+	}
+
+	await page.click('summary.grade-header >> nth=0');
+	await page.waitForFunction(
+		() => !document.querySelector('details.grade-block').open,
+		{ timeout: 2_000 }
+	);
+
+	await page.reload();
+	await page.waitForSelector('.grade-block', { timeout: 15_000 });
+	const firstOpenAfterReload = await page.$eval('details.grade-block', (el) => el.open);
+	if (firstOpenAfterReload) throw new Error('folded grade section should stay folded across reloads');
+
+	await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+	await page.click('.side-btn >> nth=1'); // "Top" button
+	await page.waitForFunction(() => window.scrollY < 50, { timeout: 3_000 });
+
+	await page.click('.side-btn >> nth=0'); // "Back" button
+	await page.waitForURL(`${BASE_URL}/`, { timeout: 5_000 });
+
 	if (consoleErrors.length) {
 		throw new Error(`console errors during smoke test:\n${consoleErrors.join('\n')}`);
 	}
