@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { kanjiData, GRADES, GRADE_LABELS, GRADE_GROUPS } from '$lib/kanji-data.js';
 	import { getAllGradeStats } from '$lib/db.js';
@@ -111,6 +112,37 @@
 
 <svelte:head>
 	<title>漢字ゴン</title>
+	<meta
+		name="description"
+		content="Offline-first kanji flashcards grouped by Japanese school grade, with spaced-repetition review. No account, no ads, works with zero internet access."
+	/>
+	<link rel="canonical" href={page.url.href} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={page.url.href} />
+	<meta property="og:title" content="漢字ゴン — Kanjigon" />
+	<meta
+		property="og:description"
+		content="Offline-first kanji flashcards grouped by Japanese school grade, with spaced-repetition review."
+	/>
+	<meta property="og:image" content="https://kanjigon.netlify.app/icons/icon-512.png" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="漢字ゴン — Kanjigon" />
+	<meta
+		name="twitter:description"
+		content="Offline-first kanji flashcards grouped by Japanese school grade, with spaced-repetition review."
+	/>
+	<meta name="twitter:image" content="https://kanjigon.netlify.app/icons/icon-512.png" />
+	{@html `<script type="application/ld+json">${JSON.stringify({
+		'@context': 'https://schema.org',
+		'@type': 'WebApplication',
+		name: 'Kanjigon',
+		description:
+			'Offline-first kanji flashcards grouped by Japanese school grade, with spaced-repetition review.',
+		url: 'https://kanjigon.netlify.app/',
+		applicationCategory: 'EducationalApplication',
+		operatingSystem: 'Any',
+		offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }
+	})}</script>`}
 </svelte:head>
 
 <main>

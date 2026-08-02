@@ -1,6 +1,7 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
+	import { page } from '$app/state';
 	import { kanjiData, GRADES, GRADE_LABELS, GRADE_LABELS_EN, GRADE_GROUPS } from '$lib/kanji-data.js';
 	import { buildSearchIndex, searchKanji } from '$lib/kana.js';
 
@@ -56,6 +57,26 @@
 
 <svelte:head>
 	<title>漢字ゴン — Glossary</title>
+	<meta
+		name="description"
+		content="Browse all Japanese kanji by school grade — readings and meanings for grades 1–6, jouyou, and jinmeiyou kanji."
+	/>
+	<link rel="canonical" href={page.url.href} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={page.url.href} />
+	<meta property="og:title" content="漢字ゴン — Glossary" />
+	<meta
+		property="og:description"
+		content="Browse all Japanese kanji by school grade — readings and meanings for grades 1–6, jouyou, and jinmeiyou kanji."
+	/>
+	<meta property="og:image" content="https://kanjigon.netlify.app/icons/icon-512.png" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="漢字ゴン — Glossary" />
+	<meta
+		name="twitter:description"
+		content="Browse all Japanese kanji by school grade — readings and meanings for grades 1–6, jouyou, and jinmeiyou kanji."
+	/>
+	<meta name="twitter:image" content="https://kanjigon.netlify.app/icons/icon-512.png" />
 </svelte:head>
 
 <main>
