@@ -126,8 +126,40 @@ try {
 	if (firstOpenAfterReload) throw new Error('folded grade section should stay folded across reloads');
 
 	await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-	await page.click('.side-btn >> nth=1'); // "Top" button
+	await page.click('.side-btn >> nth=2'); // "Top" button
 	await page.waitForFunction(() => window.scrollY < 50, { timeout: 3_000 });
+
+	// Kanji search: opens a dialog, filters live as you type, and accepts
+	// romaji, katakana, or hiragana for the same reading ("migi"/"ミギ"/
+	// "みぎ" all read as 右's kunyomi). "migi" also substring-matches 汀
+	// (water's edge, kunyomi みぎわ), so assert 右 appears rather than
+	// requiring an exact result count.
+	const hasMigiMatch = () =>
+		page.waitForFunction(
+			() => [...document.querySelectorAll('.search-row .grade-kanji')].some((el) => el.textContent === '右'),
+			undefined,
+			{ timeout: 2_000 }
+		);
+
+	await page.click('.side-btn >> nth=1'); // "Search" button
+	await page.waitForSelector('dialog[open]', { timeout: 5_000 });
+
+	await page.fill('.search-input', 'migi');
+	await hasMigiMatch();
+
+	await page.fill('.search-input', 'ミギ');
+	await hasMigiMatch();
+
+	await page.fill('.search-input', 'みぎ');
+	await hasMigiMatch();
+
+	await page.fill('.search-input', 'zzz-no-such-reading');
+	await page.waitForSelector('.search-empty', { timeout: 2_000 });
+
+	await page.fill('.search-input', 'migi');
+	await hasMigiMatch();
+	await page.click('.search-row:has-text("右")');
+	await page.waitForFunction(() => !document.querySelector('dialog[open]'), undefined, { timeout: 2_000 });
 
 	await page.click('.side-btn >> nth=0'); // "Back" button
 	await page.waitForURL(`${BASE_URL}/`, { timeout: 5_000 });

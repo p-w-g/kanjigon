@@ -2,8 +2,15 @@
 	import { goto } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { kanjiData, GRADES, GRADE_LABELS, GRADE_LABELS_EN, GRADE_GROUPS } from '$lib/kanji-data.js';
+	import { buildSearchIndex, searchKanji } from '$lib/kana.js';
 
 	const FOLD_STATE_KEY = 'kanjigon:glossary-open-grades';
+	const searchIndex = buildSearchIndex(kanjiData);
+
+	let searchDialogEl;
+	let searchInputEl;
+	let searchQuery = $state('');
+	let searchResults = $derived(searchQuery.trim() ? searchKanji(searchIndex, searchQuery) : []);
 
 	// Unfolded by default; persisted per grade once a user folds one.
 	let openByGrade = $state(Object.fromEntries(GRADES.map((g) => [g, true])));
@@ -23,6 +30,27 @@
 
 	function scrollToTop() {
 		window.scrollTo({ top: 0, behavior: 'smooth' });
+	}
+
+	function openSearchDialog() {
+		searchQuery = '';
+		searchDialogEl.showModal();
+		// showModal() must run first or the input isn't focusable yet.
+		requestAnimationFrame(() => searchInputEl?.focus());
+	}
+
+	function closeSearchDialog() {
+		searchDialogEl.close();
+	}
+
+	function jumpToEntry(entry) {
+		openByGrade[entry.grade] = true;
+		closeSearchDialog();
+		requestAnimationFrame(() => {
+			document
+				.querySelector(`[data-kanji="${entry.kanji}"]`)
+				?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		});
 	}
 </script>
 
@@ -53,7 +81,7 @@
 					</summary>
 					<div class="grade-summary">
 						{#each gradeKanji as entry (entry.kanji)}
-							<div class="grade-row">
+							<div class="grade-row" data-kanji={entry.kanji}>
 								<span class="grade-kanji">{entry.kanji}</span>
 								<span class="grade-label">{entry.meaning}</span>
 								<div class="grade-bars">
@@ -80,11 +108,61 @@
 		<span class="side-btn-icon" aria-hidden="true">←</span>
 		<span>Back</span>
 	</button>
+	<button class="side-btn" onclick={openSearchDialog} aria-label="Search kanji">
+		<span class="side-btn-icon" aria-hidden="true">⌕</span>
+		<span>Search</span>
+	</button>
 	<button class="side-btn" onclick={scrollToTop} aria-label="Scroll to top">
 		<span class="side-btn-icon" aria-hidden="true">↑</span>
 		<span>Top</span>
 	</button>
 </div>
+
+<dialog
+	class="search-dialog"
+	bind:this={searchDialogEl}
+	onclick={(e) => e.target === searchDialogEl && closeSearchDialog()}
+>
+	<div class="search-header">
+		<input
+			bind:this={searchInputEl}
+			bind:value={searchQuery}
+			type="text"
+			inputmode="text"
+			autocomplete="off"
+			autocapitalize="off"
+			spellcheck="false"
+			placeholder="Search readings or meaning…"
+			class="search-input"
+		/>
+		<button type="button" class="search-close" onclick={closeSearchDialog} aria-label="Close search">
+			✕
+		</button>
+	</div>
+
+	<div class="search-results">
+		{#if searchQuery.trim() && searchResults.length === 0}
+			<p class="search-empty">No matches.</p>
+		{:else}
+			{#each searchResults as entry (entry.kanji)}
+				<button type="button" class="search-row" onclick={() => jumpToEntry(entry)}>
+					<span class="grade-kanji">{entry.kanji}</span>
+					<span class="grade-label">{entry.meaning}</span>
+					<div class="grade-bars">
+						<div class="bar-row">
+							<span class="bar-label">onyomi</span>
+							<span class="reading-value">{entry.onyomi.join('・') || '—'}</span>
+						</div>
+						<div class="bar-row">
+							<span class="bar-label">kunyomi</span>
+							<span class="reading-value">{entry.kunyomi.join('・') || '—'}</span>
+						</div>
+					</div>
+				</button>
+			{/each}
+		{/if}
+	</div>
+</dialog>
 
 <style>
 	main {
@@ -265,5 +343,86 @@
 	.side-btn-icon {
 		font-size: 1.1rem;
 		color: var(--text);
+	}
+
+	.search-dialog {
+		max-width: 480px;
+		width: 90vw;
+		max-height: 80vh;
+		border: none;
+		border-radius: 1rem;
+		padding: 1rem;
+		background: var(--surface);
+		color: var(--text);
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	/* dialog[open]'s UA default is `display: block`; override to flex only
+	   while open so the closed state stays `display: none` (native default)
+	   instead of an author rule always beating the UA stylesheet's :not([open]) */
+	.search-dialog[open] {
+		display: flex;
+	}
+
+	.search-dialog::backdrop {
+		background: rgba(0, 0, 0, 0.5);
+	}
+
+	.search-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.search-input {
+		flex: 1;
+		padding: 0.65rem 0.85rem;
+		border: 1px solid var(--surface-2);
+		border-radius: 0.6rem;
+		background: var(--surface-2);
+		color: var(--text);
+		font-size: 1rem;
+	}
+
+	.search-close {
+		flex-shrink: 0;
+		width: 2.25rem;
+		height: 2.25rem;
+		border: 1px solid var(--surface-2);
+		border-radius: 0.6rem;
+		background: var(--surface-2);
+		color: var(--text-dim);
+		font-size: 0.9rem;
+	}
+
+	.search-results {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		overflow-y: auto;
+	}
+
+	.search-empty {
+		color: var(--text-dim);
+		font-size: 0.9rem;
+		text-align: center;
+		margin: 1rem 0;
+	}
+
+	.search-row {
+		display: grid;
+		grid-template-columns: 2.5rem 1fr;
+		gap: 0.25rem 0.75rem;
+		align-items: center;
+		background: var(--surface-2);
+		border: none;
+		border-radius: 0.75rem;
+		padding: 0.75rem;
+		width: 100%;
+		font: inherit;
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
 	}
 </style>
