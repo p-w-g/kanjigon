@@ -1,15 +1,15 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { VitePWA } from 'vite-plugin-pwa';
+import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [
 		sveltekit(),
-		VitePWA({
+		SvelteKitPWA({
 			registerType: 'autoUpdate',
-			// injectManifest lets Workbox precache EVERYTHING built by Vite,
-			// including your kanji JSON data, so the whole app works with zero
-			// network access after the very first load.
+			// generateSW precaches everything Workbox is told to glob, including
+			// prerendered HTML and our kanji JSON data, so the whole app works
+			// with zero network access after the very first load.
 			strategies: 'generateSW',
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,json}'],

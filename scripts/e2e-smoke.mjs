@@ -168,6 +168,17 @@ try {
 		throw new Error(`console errors during smoke test:\n${consoleErrors.join('\n')}`);
 	}
 
+	// Regression test for the vite-plugin-pwa/SvelteKit precache-ordering bug:
+	// the service worker's precache manifest previously had zero .html entries
+	// because it was built before SvelteKit's prerender step ran, so the SPA
+	// navigation fallback pointed at nothing and offline loads failed outright.
+	await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 15_000 });
+	const context = page.context();
+	await context.setOffline(true);
+	await page.reload();
+	await page.waitForSelector('.grade-summary', { timeout: 10_000 });
+	await context.setOffline(false);
+
 	await browser.close();
 	console.log('e2e smoke test passed');
 } finally {

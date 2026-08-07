@@ -16,6 +16,11 @@ const config = {
 			// so canonical/OG URLs baked in at build time point at the real
 			// domain instead of SvelteKit's http://sveltekit-prerender placeholder
 			origin: 'https://kanjigon.netlify.app'
+		},
+		// @vite-pwa/sveltekit registers its own service worker; don't let
+		// SvelteKit's built-in (unused) service-worker convention compete with it
+		serviceWorker: {
+			register: false
 		}
 	}
 };
