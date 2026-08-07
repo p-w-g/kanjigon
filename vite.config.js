@@ -38,7 +38,14 @@ export default defineConfig({
 				]
 			},
 			devOptions: {
-				enabled: true // so you can test offline behavior in `npm run dev` too
+				// `vite dev` serves the app as hundreds of unbundled ES modules, so
+				// Workbox has nothing meaningful to precache here — enabling this
+				// used to just fail silently, but now that registration succeeds
+				// it instead lets a real SW take over with an empty cache, which
+				// hangs the page forever the moment the dev server goes away.
+				// Real offline verification only happens against the production
+				// build: `npm run build && npm run preview` (or `npm run test:e2e`).
+				enabled: false
 			}
 		})
 	]
